@@ -4,6 +4,7 @@
 <h1>{{ project.title }}</h1>
 <p>{{ project.description }}</p>
 <p>Created: {{ project.created_at|date:'Y-m-d H:i' }}</p>
+<p><strong>Status:</strong> {{ project.status }}</p>
 
 <h2>Versions</h2>
 {% if versions %}
@@ -25,13 +26,55 @@
   <p>No versions yet.</p>
 {% endif %}
 
-{% if can_upload %}
-  <h3>Upload new version</h3>
-  <form method="post" enctype="multipart/form-data" action="{% url 'projects:upload_version' project.pk %}">{% csrf_token %}
-    {{ file_form.as_p }}
-    <p class="hint">Only a single file is accepted (any type). Max size: 10MB by default.</p>
-    <button type="submit">Upload</button>
+<h2>Reviews</h2>
+{% if reviews_with_versions %}
+  <ul>
+  {% for pair in reviews_with_versions %}
+    {% with r=pair.0 v=pair.1 %}
+    <li>
+      <strong>{{ r.get_decision_display }}</strong>{% if v %} (v{{ v.version_number }}){% endif %} by {{ r.reviewer.username }} on {{ r.created_at|date:'Y-m-d H:i' }}
+      {% if r.feedback %}
+        <div>{{ r.feedback }}</div>
+      {% endif %}
+    </li>
+    {% endwith %}
+  {% endfor %}
+  </ul>
+{% else %}
+  <p>No reviews yet.</p>
+{% endif %}
+
+{% if request.user.is_staff or is_faculty %}
+  <h3>Submit a review</h3>
+  <form method="post" action="{% url 'projects:review_project' project.pk %}">{% csrf_token %}
+    {{ file_form.non_field_errors }}
+    <div class="field">
+      <label for="id_decision">Decision</label><br>
+      <select name="decision" id="id_decision">
+        <option value="A">Approved</option>
+        <option value="R">Rejected</option>
+        <option value="P">Pending</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="id_feedback">Feedback</label><br>
+      <textarea name="feedback" id="id_feedback" rows="4"></textarea>
+    </div>
+    <button type="submit">Submit review</button>
   </form>
+{% endif %}
+
+{% if can_upload %}
+  {% if project.status != 'Approved' or request.user.is_staff %}
+    <h3>Upload new version</h3>
+    <form method="post" enctype="multipart/form-data" action="{% url 'projects:upload_version' project.pk %}">{% csrf_token %}
+      {{ file_form.as_p }}
+      <p class="hint">Only a single file is accepted (any type). Max size: 10MB by default.</p>
+      <button type="submit">Upload</button>
+    </form>
+  {% else %}
+    <p><em>Uploading new versions is disabled because this project has been approved. Contact faculty if you need to resubmit.</em></p>
+  {% endif %}
 {% else %}
   <p><em>Uploading new versions is restricted to the project owner and site staff.</em></p>
 {% endif %}

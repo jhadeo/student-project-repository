@@ -42,3 +42,59 @@ class ProjectVersion(models.Model):
 
     def __str__(self):
         return f"{self.project.title} v{self.version_number}"
+
+
+class Review(models.Model):
+    DECISION_PENDING = 'P'
+    DECISION_APPROVED = 'A'
+    DECISION_REJECTED = 'R'
+    DECISION_CHOICES = [
+        (DECISION_PENDING, 'Pending'),
+        (DECISION_APPROVED, 'Approved'),
+        (DECISION_REJECTED, 'Rejected'),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='reviews')
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reviews')
+    # explicit link to the version that was reviewed. nullable for existing data.
+    version = models.ForeignKey('ProjectVersion', null=True, blank=True, on_delete=models.SET_NULL, related_name='reviewed_by')
+    decision = models.CharField(max_length=1, choices=DECISION_CHOICES, default=DECISION_PENDING)
+    feedback = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Review {self.get_decision_display()} by {self.reviewer.username} on {self.project.title}"
+
+
+@property
+def project_status(self):
+    """Return the project status derived from the latest review.
+
+    Possible values: 'Approved', 'Rejected', 'Pending', 'No Reviews'.
+    """
+    latest_review = self.reviews.first()
+    latest_version = self.versions.first()
+
+    # If there are no reviews, treat the project as Pending by default
+    # (newly created projects should start as pending).
+    if not latest_review:
+        return 'Pending'
+
+    # If a new version has been uploaded after the last review, the project
+    # should be treated as pending again (student resubmitted after rejection
+    # or after addressing feedback).
+    if latest_version and latest_version.created_at > latest_review.created_at:
+        return 'Pending'
+
+    # Otherwise, project status is derived from the latest review decision.
+    if latest_review.decision == Review.DECISION_APPROVED:
+        return 'Approved'
+    if latest_review.decision == Review.DECISION_REJECTED:
+        return 'Rejected'
+    return 'Pending'
+
+# attach convenience property to Project class
+Project.status = project_status

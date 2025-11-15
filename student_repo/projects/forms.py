@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from .models import Project, ProjectVersion
+from .models import Review
 
 
 class ProjectForm(forms.ModelForm):
@@ -26,3 +27,9 @@ class ProjectVersionForm(forms.ModelForm):
         if f.size > max_bytes:
             raise ValidationError(f'File too large. Max size is {max_bytes} bytes.')
         return f
+
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['decision', 'feedback']

@@ -2,8 +2,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import Http404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from accounts.decorators import is_profile_type, is_staff_or_type, require_role, forbid_role
 from .models import Project, ProjectVersion
 from .forms import ProjectForm, ProjectVersionForm
+from .forms import ReviewForm
 from django.http import FileResponse
 import mimetypes
 from django.utils import timezone
@@ -18,12 +20,10 @@ def my_projects(request):
 
 @login_required
 def create_project(request):
-    # Prevent faculty users from creating project submissions.
-    profile = getattr(request.user, 'profile', None)
-    is_faculty = bool(profile and getattr(profile, 'type', None) == 'F')
-    if is_faculty and not request.user.is_staff:
-        # Faculty are not allowed to create submissions.
-        raise Http404
+    # Prevent faculty users from creating project submissions. Redirect to dashboard with message.
+    if is_profile_type(request.user, 'F') and not request.user.is_staff:
+        messages.error(request, 'Access denied: faculty may not create project submissions.')
+        return redirect('dashboard_faculty')
     if request.method == 'POST':
         form = ProjectForm(request.POST)
         file_form = ProjectVersionForm(request.POST, request.FILES)
@@ -58,12 +58,22 @@ def project_detail(request, pk):
     if proj.is_deleted:
         raise Http404
     # Allow owners, staff, and faculty to view a project. Students can only view their own.
-    profile = getattr(request.user, 'profile', None)
-    is_faculty = bool(profile and getattr(profile, 'type', None) == 'F')
+    is_faculty = is_profile_type(request.user, 'F')
     if proj.owner != request.user and not (request.user.is_staff or is_faculty):
         raise Http404
     versions = proj.versions.all()
     file_form = ProjectVersionForm()
+    # Pair each review with the latest project version that existed at the
+    # time the review was created. This lets us show which version was
+    # approved/rejected without changing the Review model.
+    reviews = proj.reviews.all()
+    reviews_with_versions = []
+    for r in reviews:
+        # Prefer an explicit FK if present (new migration); otherwise infer by timestamp
+        v = getattr(r, 'version', None)
+        if not v:
+            v = proj.versions.filter(created_at__lte=r.created_at).first()
+        reviews_with_versions.append((r, v))
     # determine whether the current user may upload versions: owners and staff only
     can_upload = (proj.owner == request.user) or request.user.is_staff
     return render(request, 'projects/project_detail.html', {
@@ -72,6 +82,7 @@ def project_detail(request, pk):
         'file_form': file_form,
         'can_upload': can_upload,
         'is_faculty': is_faculty,
+        'reviews_with_versions': reviews_with_versions,
     })
 
 @login_required
@@ -84,8 +95,7 @@ def download_version(request, pk, version_pk):
     proj = get_object_or_404(Project, pk=pk)
     if proj.is_deleted:
         raise Http404
-    profile = getattr(request.user, 'profile', None)
-    is_faculty = bool(profile and getattr(profile, 'type', None) == 'F')
+    is_faculty = is_profile_type(request.user, 'F')
     if proj.owner != request.user and not (request.user.is_staff or is_faculty):
         raise Http404
 
@@ -115,18 +125,27 @@ def upload_version(request, pk):
     if proj.is_deleted:
         raise Http404
     # Only allow owners and staff to upload versions. Faculty (type 'F') may view and comment
-    # but must not upload new versions.
-    profile = getattr(request.user, 'profile', None)
-    is_faculty = bool(profile and getattr(profile, 'type', None) == 'F')
-    if is_faculty and not request.user.is_staff:
-        # faculty are not allowed to upload versions
-        raise Http404
+    # but must not upload new versions. Redirect faculty to dashboard with message.
+    if is_profile_type(request.user, 'F') and not request.user.is_staff:
+        messages.error(request, 'Access denied: faculty may not upload project versions.')
+        return redirect('dashboard_faculty')
     # Students may only upload to their own projects; staff may upload to any.
     if proj.owner != request.user and not request.user.is_staff:
         raise Http404
     if request.method == 'POST':
         form = ProjectVersionForm(request.POST, request.FILES)
         if form.is_valid():
+            # Prevent uploads when the project is already approved (unless staff).
+            # This enforces the rule: once a project is approved it cannot be edited/uploaded
+            # further by the owner. If the owner wants to resubmit, a reviewer must
+            # revoke approval or staff intervene.
+            try:
+                status = proj.status
+            except Exception:
+                status = None
+            if status == 'Approved' and not request.user.is_staff:
+                messages.error(request, 'Cannot upload: project already approved.')
+                return redirect('projects:project_detail', pk=proj.pk)
             # calculate next version number
             latest = proj.versions.first()
             next_ver = (latest.version_number + 1) if latest else 1
@@ -155,11 +174,45 @@ def upload_version(request, pk):
 
 
 @login_required
+def review_project(request, pk):
+    """Allow faculty or staff to submit a review for a project (UC-12..UC-17).
+
+    Students are not allowed to review. After saving the review, redirect back
+    to the project detail.
+    """
+    proj = get_object_or_404(Project, pk=pk)
+    if proj.is_deleted:
+        raise Http404
+    # Only faculty or staff can review
+    if not (request.user.is_staff or is_profile_type(request.user, 'F')):
+        messages.error(request, 'Access denied: only faculty or staff may review projects.')
+        return redirect('profile')
+
+    # Prevent project owners from reviewing their own submissions
+    if request.user == proj.owner:
+        messages.error(request, 'Owners may not review their own projects.')
+        return redirect('projects:project_detail', pk=proj.pk)
+
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.project = proj
+            review.reviewer = request.user
+            review.save()
+            messages.success(request, 'Review submitted.')
+            return redirect('projects:project_detail', pk=proj.pk)
+        else:
+            messages.error(request, 'Invalid review submission.')
+            return redirect('projects:project_detail', pk=proj.pk)
+    # GET should redirect to project detail
+    return redirect('projects:project_detail', pk=proj.pk)
+
+
+@login_required
 def submitted_projects(request):
     """List all submitted (non-deleted) projects for faculty/admin (UC-11)."""
-    profile = getattr(request.user, 'profile', None)
-    is_faculty = bool(profile and getattr(profile, 'type', None) == 'F')
-    if not (request.user.is_staff or is_faculty):
+    if not (request.user.is_staff or is_profile_type(request.user, 'F')):
         raise Http404
     projects = Project.objects.filter(is_deleted=False).order_by('-created_at')
     return render(request, 'projects/submitted_projects.html', {'projects': projects})
@@ -169,8 +222,6 @@ def submitted_projects(request):
 def delete_project(request, pk):
     """Soft-delete a project (UC-10). Owners and staff can perform this action."""
     proj = get_object_or_404(Project, pk=pk)
-    profile = getattr(request.user, 'profile', None)
-    is_faculty = bool(profile and getattr(profile, 'type', None) == 'F')
     # Only owner or staff can delete. Faculty may not delete others' projects.
     if proj.owner != request.user and not request.user.is_staff:
         raise Http404

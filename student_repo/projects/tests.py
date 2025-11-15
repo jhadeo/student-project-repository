@@ -111,6 +111,33 @@ class ProjectsTests(TestCase):
         proj.refresh_from_db()
         self.assertEqual(proj.versions.count(), 0)
 
+    def test_faculty_can_review_project(self):
+        # setup owner and project
+        owner = User.objects.create_user('ownr', password='pw')
+        Profile.objects.create(user=owner, type='S')
+        proj = Project.objects.create(owner=owner, title='ReviewMe', description='d')
+        fac = User.objects.create_user('fac_rev', password='pw')
+        Profile.objects.create(user=fac, type='F')
+        self.client.login(username='fac_rev', password='pw')
+        url = reverse('projects:review_project', args=[proj.pk])
+        resp = self.client.post(url, {'decision': 'A', 'feedback': 'Looks good'}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(proj.reviews.count(), 1)
+        rev = proj.reviews.first()
+        self.assertEqual(rev.decision, 'A')
+
+    def test_student_cannot_review(self):
+        owner = User.objects.create_user('ownr2', password='pw')
+        Profile.objects.create(user=owner, type='S')
+        proj = Project.objects.create(owner=owner, title='NoReview', description='d')
+        stu = User.objects.create_user('stu_rev', password='pw')
+        Profile.objects.create(user=stu, type='S')
+        self.client.login(username='stu_rev', password='pw')
+        url = reverse('projects:review_project', args=[proj.pk])
+        resp = self.client.post(url, {'decision': 'R', 'feedback': 'Bad'}, follow=True)
+        # should be redirected away (to profile) and no review created
+        self.assertEqual(proj.reviews.count(), 0)
+
     def test_reject_non_archive_upload(self):
         u = User.objects.create_user('stu3', password='pw')
         self.client.login(username='stu3', password='pw')
@@ -127,9 +154,10 @@ class ProjectsTests(TestCase):
         Profile.objects.create(user=fac, type='F')
         self.client.login(username='fac2', password='pw')
         url = reverse('projects:create_project')
-        resp = self.client.post(url, {'title': 'Forbidden', 'description': 'x'}, follow=True)
-        # faculty should not be able to create projects
-        self.assertNotEqual(resp.status_code, 200)
+        # do not follow redirects so we can assert redirect response
+        resp = self.client.post(url, {'title': 'Forbidden', 'description': 'x'}, follow=False)
+        # faculty should be redirected away from create; ensure no project created
+        self.assertIn(resp.status_code, (301, 302))
         self.assertFalse(Project.objects.filter(title='Forbidden').exists())
 
     def test_upload_version_with_metadata_updates_project_and_saves_snapshot(self):
@@ -165,6 +193,59 @@ class ProjectsTests(TestCase):
         resp = self.client.get(url)
         # students should get 404 when accessing others' projects
         self.assertEqual(resp.status_code, 404)
+
+    def test_status_transitions_and_owner_review_blocking(self):
+        # owner creates project and initial upload
+        owner = User.objects.create_user('owner_status', password='pw')
+        Profile.objects.create(user=owner, type='S')
+        proj = Project.objects.create(owner=owner, title='StatProj', description='d')
+        ProjectVersion.objects.create(project=proj, version_number=1)
+        # initial state should be Pending
+        self.assertEqual(proj.status, 'Pending')
+
+        # faculty approves
+        fac = User.objects.create_user('fac_status', password='pw')
+        Profile.objects.create(user=fac, type='F')
+        self.client.login(username='fac_status', password='pw')
+        url = reverse('projects:review_project', args=[proj.pk])
+        resp = self.client.post(url, {'decision': 'A', 'feedback': 'OK'}, follow=True)
+        proj.refresh_from_db()
+        self.assertEqual(proj.status, 'Approved')
+
+        # owner cannot upload a new version when Approved
+        self.client.logout()
+        self.client.login(username='owner_status', password='pw')
+        upload_url = reverse('projects:upload_version', args=[proj.pk])
+        txt = SimpleUploadedFile('v2.zip', b'PK')
+        resp = self.client.post(upload_url, {'uploaded_file': txt}, follow=True)
+        proj.refresh_from_db()
+        self.assertEqual(proj.versions.count(), 1)
+
+        # faculty can reject (create a new review)
+        self.client.logout()
+        self.client.login(username='fac_status', password='pw')
+        resp = self.client.post(url, {'decision': 'R', 'feedback': 'Bad'}, follow=True)
+        proj.refresh_from_db()
+        self.assertEqual(proj.status, 'Rejected')
+
+        # now owner can upload a new version, which makes status Pending again
+        self.client.logout()
+        self.client.login(username='owner_status', password='pw')
+        txt2 = SimpleUploadedFile('v3.zip', b'PK2')
+        resp = self.client.post(upload_url, {'uploaded_file': txt2}, follow=True)
+        proj.refresh_from_db()
+        self.assertEqual(proj.versions.count(), 2)
+        self.assertEqual(proj.status, 'Pending')
+
+    def test_owner_cannot_review_own_project(self):
+        owner = User.objects.create_user('owner_rev', password='pw')
+        Profile.objects.create(user=owner, type='S')
+        proj = Project.objects.create(owner=owner, title='NoSelfReview', description='d')
+        self.client.login(username='owner_rev', password='pw')
+        url = reverse('projects:review_project', args=[proj.pk])
+        resp = self.client.post(url, {'decision': 'A', 'feedback': 'I like it'}, follow=True)
+        # no review should be created
+        self.assertEqual(proj.reviews.count(), 0)
 
     def test_faculty_can_view_others_project(self):
         owner = User.objects.create_user('owner2', password='pw')
