@@ -22,6 +22,7 @@ from accounts import views as accounts_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
+    path('projects/', include('projects.urls')),
     # Home should route to a dispatcher that sends logged-in users to their
     # dashboard and anonymous users to the login page.
     path('', accounts_views.post_login_redirect, name='home'),

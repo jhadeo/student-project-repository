@@ -1,0 +1,11 @@
+from django.urls import path
+from . import views
+
+app_name = 'projects'
+
+urlpatterns = [
+    path('', views.my_projects, name='my_projects'),
+    path('create/', views.create_project, name='create_project'),
+    path('<int:pk>/', views.project_detail, name='project_detail'),
+    path('<int:pk>/upload/', views.upload_version, name='upload_version'),
+]

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ project.title }}{% endblock %}
+{% block content %}
+<h1>{{ project.title }}</h1>
+<p>{{ project.description }}</p>
+<p>Created: {{ project.created_at|date:'Y-m-d H:i' }}</p>
+
+<h2>Versions</h2>
+{% if versions %}
+  <ul>
+  {% for v in versions %}
+    <li>v{{ v.version_number }} - {{ v.created_at|date:'Y-m-d H:i' }} {% if v.uploaded_file %}- <a href="{{ v.uploaded_file.url }}">download</a>{% endif %}</li>
+  {% endfor %}
+  </ul>
+{% else %}
+  <p>No versions yet.</p>
+{% endif %}
+
+<h3>Upload new version</h3>
+<form method="post" enctype="multipart/form-data" action="{% url 'projects:upload_version' project.pk %}">{% csrf_token %}
+  {{ file_form.as_p }}
+  <p class="hint">Only a single file is accepted (any type). Max size: 10MB by default.</p>
+  <button type="submit">Upload</button>
+</form>
+
+<p><a href="{% url 'projects:my_projects' %}">Back to my projects</a></p>
+{% endblock %}

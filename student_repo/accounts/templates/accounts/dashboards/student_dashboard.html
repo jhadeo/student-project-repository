@@ -11,8 +11,8 @@
 </ul>
 <h2>Quick actions</h2>
 <ul>
-  <li><a href="#">Submit a project (placeholder)</a></li>
-  <li><a href="#">View my submissions</a></li>
+  <li><a href="{% url 'projects:create_project' %}">Submit a project</a></li>
+  <li><a href="{% url 'projects:my_projects' %}">View my submissions</a></li>
   <li><a href="{% url 'profile' %}">Edit profile</a></li>
 </ul>
 {% endblock %}

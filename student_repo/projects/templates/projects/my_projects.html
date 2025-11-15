@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}My Projects{% endblock %}
+{% block content %}
+<h1>My Projects</h1>
+<p><a href="{% url 'projects:create_project' %}">Create new project</a></p>
+<p>Uploads must be a single file (any type). Max size: 10MB by default.</p>
+{% if projects %}
+  <ul>
+    {% for p in projects %}
+      <li>
+        <a href="{% url 'projects:project_detail' p.pk %}">{{ p.title }}</a> - {{ p.created_at|date:'Y-m-d' }}
+        {% if p.latest_version %}
+          &mdash; latest: v{{ p.latest_version.version_number }} ({{ p.latest_version.created_at|date:'Y-m-d' }})
+          {% if p.latest_version.uploaded_file %}- <a href="{{ p.latest_version.uploaded_file.url }}">download</a>{% endif %}
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No projects yet.</p>
+{% endif %}
+{% endblock %}

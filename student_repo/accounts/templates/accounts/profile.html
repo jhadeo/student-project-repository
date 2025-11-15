@@ -1,51 +1,84 @@
 {% extends 'base.html' %}
 {% block title %}Profile{% endblock %}
 {% block content %}
-<h1>Profile</h1>
-<p>Username: {{ request.user.username }}</p>
-<p>Email: {{ request.user.email }}</p>
+<div class="profile-page">
+    <header>
+        <h1>My Profile</h1>
+        <p>Welcome, <strong>{{ profile.full_name|default:request.user.username }}</strong></p>
+        <p>Account: <strong>{{ request.user.username }}</strong> • Email: <strong>{{ request.user.email }}</strong></p>
+        <p><a href="{% url 'home' %}">Go to Dashboard</a></p>
+    </header>
 
-{% if profile %}
-    <p>Type: {{ profile.get_type_display }}</p>
-{% else %}
-    <p>No profile yet.</p>
-{% endif %}
+    {% if messages %}
+        <section class="messages">
+            {% for m in messages %}
+                <div class="message {{ m.tags }}">{{ m }}</div>
+            {% endfor %}
+        </section>
+    {% endif %}
 
-{% if messages %}
-    {% for m in messages %}
-        <div class="message {{ m.tags }}">{{ m }}</div>
-    {% endfor %}
-{% endif %}
-<h2>Account</h2>
-<form method="post">{% csrf_token %}
-    {{ user_form.non_field_errors }}
-    <div>
-        {{ user_form.username.label_tag }} {{ user_form.username }}
-        {{ user_form.username.errors }}
-    </div>
-    <div>
-        {{ user_form.email.label_tag }} {{ user_form.email }}
-        {{ user_form.email.errors }}
-    </div>
-    <button type="submit" name="save_account">Save account</button>
-</form>
+    <section class="account-section">
+        <h2>Account</h2>
+        <form method="post">{% csrf_token %}
+            {{ user_form.non_field_errors }}
+            <div class="field">
+                {{ user_form.username.label_tag }}<br>
+                {{ user_form.username }}
+                {{ user_form.username.errors }}
+            </div>
+            <div class="field">
+                {{ user_form.email.label_tag }}<br>
+                {{ user_form.email }}
+                {{ user_form.email.errors }}
+            </div>
+            <div class="actions">
+                <button type="submit" name="save_account">Save account</button>
+            </div>
+        </form>
+    </section>
 
-<h2>Profile</h2>
-<form method="post">{% csrf_token %}
-    {{ form.non_field_errors }}
-    <div>
-        {{ form.full_name.label_tag }} {{ form.full_name }}
-        {{ form.full_name.errors }}
-    </div>
-    <div>
-            {{ form.type.label_tag }} {{ form.type }}
-        {{ form.type.errors }}
-    </div>
-    <button type="submit" name="save_profile">Save profile</button>
-</form>
-<form method="post" action="{% url 'logout' %}">{% csrf_token %}
-    <button type="submit">Logout</button>
-</form>
+    <section class="profile-section">
+        <h2>Profile</h2>
+        <form method="post">{% csrf_token %}
+            {{ form.non_field_errors }}
+            <div class="field">
+                {{ form.full_name.label_tag }}<br>
+                {{ form.full_name }}
+                {{ form.full_name.errors }}
+            </div>
+            <div class="field">
+                {% if request.user.is_staff %}
+                    {{ form.type.label_tag }}<br>
+                    {{ form.type }}
+                    {{ form.type.errors }}
+                {% else %}
+                    <label>Type</label>
+                    <div class="readonly">{{ profile.get_type_display|default:"Not set" }}</div>
+                {% endif %}
+            </div>
+            <div class="actions">
+                <button type="submit" name="save_profile">Save profile</button>
+            </div>
+        </form>
+    </section>
 
-<p><a href="{% url 'password_change' %}">Change password</a></p>
+    <section class="security-section">
+        <h2>Security</h2>
+        <p><a href="{% url 'password_change' %}">Change password</a></p>
+    </section>
+
+    <section class="actions">
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+    </section>
+</div>
+<style>
+    .profile-page { max-width: 800px; margin: 0 auto; }
+    header p { margin: 0.25rem 0; }
+    section { border-top: 1px solid #eee; padding: 1rem 0; }
+    .field { margin-bottom: 0.75rem; }
+    .readonly { padding: 0.5rem; background:#f9f9f9; border:1px solid #eee; }
+    .actions { margin-top: 0.5rem; }
+</style>
 {% endblock %}

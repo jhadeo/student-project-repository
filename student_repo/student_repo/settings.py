@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
+    'projects.apps.ProjectsConfig',
 ]
 
 MIDDLEWARE = [
@@ -133,3 +135,7 @@ AUTHENTICATION_BACKENDS = [
 # correct dashboard based on their Profile.type (or to profile if unset).
 LOGIN_REDIRECT_URL = 'post_login'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Maximum allowed upload size for project archives (in bytes).
+# Default is 10 MB but you can override with the environment variable
+PROJECT_UPLOAD_MAX_BYTES = int(os.getenv('PROJECT_UPLOAD_MAX_BYTES', 10 * 1024 * 1024))
