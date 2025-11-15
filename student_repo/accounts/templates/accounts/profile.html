@@ -1,0 +1,49 @@
+<!doctype html>
+<title>Profile</title>
+<h1>Profile</h1>
+<p>Username: {{ request.user.username }}</p>
+<p>Email: {{ request.user.email }}</p>
+
+{% if profile %}
+    <p>Type: {{ profile.get_type_display }}</p>
+{% else %}
+    <p>No profile yet.</p>
+{% endif %}
+
+{% if messages %}
+    {% for m in messages %}
+        <div class="message {{ m.tags }}">{{ m }}</div>
+    {% endfor %}
+{% endif %}
+<h2>Account</h2>
+<form method="post">{% csrf_token %}
+    {{ user_form.non_field_errors }}
+    <div>
+        {{ user_form.username.label_tag }} {{ user_form.username }}
+        {{ user_form.username.errors }}
+    </div>
+    <div>
+        {{ user_form.email.label_tag }} {{ user_form.email }}
+        {{ user_form.email.errors }}
+    </div>
+    <button type="submit" name="save_account">Save account</button>
+</form>
+
+<h2>Profile</h2>
+<form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <div>
+        {{ form.full_name.label_tag }} {{ form.full_name }}
+        {{ form.full_name.errors }}
+    </div>
+    <div>
+            {{ form.type.label_tag }} {{ form.type }}
+        {{ form.type.errors }}
+    </div>
+    <button type="submit" name="save_profile">Save profile</button>
+</form>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}
+    <button type="submit">Logout</button>
+</form>
+
+<p><a href="{% url 'password_change' %}">Change password</a></p>

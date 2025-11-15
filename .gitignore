@@ -1,2 +1,3 @@
 .github
-
+student_repo/db.sqlite3
+__pycache__/
