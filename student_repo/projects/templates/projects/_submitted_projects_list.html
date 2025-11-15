@@ -1,0 +1,20 @@
+{% comment %}Partial: renders only the table body rows for submitted projects{% endcomment %}
+{% for p in projects %}
+<tr>
+  <td><a href="{% url 'projects:project_detail' p.pk %}">{{ p.title }}</a></td>
+  <td>{{ p.owner.username }}</td>
+  <td>{{ p.status }}</td>
+  <td>{{ p.created_at }}</td>
+  <td>
+    <a href="{% url 'projects:project_detail' p.pk %}">View</a>
+    {% if request.user.is_staff or p.owner == request.user %}
+     | <a href="{% url 'projects:delete_project' p.pk %}">Delete</a>
+    {% endif %}
+    {% if request.user.is_staff %}
+     | <a href="{% url 'projects:admin_override_status' p.pk %}">Admin override</a>
+    {% endif %}
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="5">No projects match the current filters.</td></tr>
+{% endfor %}

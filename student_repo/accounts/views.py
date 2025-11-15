@@ -150,9 +150,9 @@ def student_dashboard(request):
     context = {
         'profile': profile,
         'usecases': [
-            'UC-01: Accounts & Profiles',
-            'UC-06: Project submission (student-facing)',
-            'UC-13: View feedback/reviews'
+            'Accounts & profiles',
+            'Project submission (student-facing)',
+            'View feedback and reviews'
         ]
     }
     return render(request, 'accounts/dashboards/student_dashboard.html', context)
@@ -166,9 +166,9 @@ def faculty_dashboard(request):
     context = {
         'profile': profile,
         'usecases': [
-            'UC-11..UC-17: Review workflow',
-            'UC-18: Search & Filter submissions',
-            'UC-21: Notifications (placeholder)'
+            'Review workflow',
+            'Search and filter submissions',
+            'Notifications (placeholder)'
         ]
     }
     return render(request, 'accounts/dashboards/faculty_dashboard.html', context)
@@ -182,9 +182,9 @@ def admin_dashboard(request):
     context = {
         'profile': profile,
         'usecases': [
-            'UC-25..UC-28: Ops, backups, audit logs',
-            'UC-22: Reporting & aggregates',
-            'UC-27: Soft deletes / audit trail'
+            'Ops, backups, and audit logs',
+            'Reporting and aggregates',
+            'Soft deletes and audit trail'
         ]
     }
     return render(request, 'accounts/dashboards/admin_dashboard.html', context)
@@ -195,7 +195,7 @@ def admin_dashboard(request):
 @login_required
 @require_role('A', message='Access denied: admin only.')
 def manage_users(request):
-    """List users for admin management (UC-04)."""
+    """List users for admin management."""
     User = get_user_model()
     users = User.objects.all().order_by('username')
     # number of admin profiles (type 'A') to protect sole admin
@@ -206,7 +206,7 @@ def manage_users(request):
 @login_required
 @require_role('A', message='Access denied: admin only.')
 def edit_user(request, user_id):
-    """Edit a user's basic info and profile. Admin-only (UC-04)."""
+    """Edit a user's basic info and profile. Admin-only."""
     User = get_user_model()
     user = User.objects.filter(pk=user_id).first()
     if not user:

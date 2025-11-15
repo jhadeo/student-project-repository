@@ -9,6 +9,8 @@ from .forms import ReviewForm
 from django.http import FileResponse
 import mimetypes
 from django.utils import timezone
+from django.db.models import Q
+from django.shortcuts import render
 
 
 @login_required
@@ -80,6 +82,78 @@ def project_detail(request, pk):
         'can_upload': can_upload,
         'is_faculty': is_faculty,
         'reviews_with_versions': reviews_with_versions,
+    })
+
+
+@login_required
+@require_role('A', message='Access denied: admin only.')
+def admin_override_status(request, pk):
+    """Allow admins/staff to set a project's status by creating a review.
+
+    Creating a Review is used to record the override and keep the audit trail.
+    """
+    proj = get_object_or_404(Project, pk=pk)
+    if proj.is_deleted:
+        raise Http404
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.project = proj
+            review.reviewer = request.user
+            # If no explicit version provided, attach the current latest version
+            if not review.version:
+                review.version = proj.latest_version
+            review.save()
+            messages.success(request, 'Admin override applied.')
+        else:
+            messages.error(request, 'Invalid data for override.')
+    return redirect('projects:project_detail', pk=proj.pk)
+
+
+@login_required
+@require_role('F', message='Access denied: faculty only.')
+def search_projects(request):
+    """Simple search and filter for projects.
+
+    Query params:
+    - q: text to search in title or owner username
+    - status: one of 'Approved', 'Rejected', 'Pending' to filter by computed status
+    """
+    q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '').strip()
+    created_after = request.GET.get('created_after', '').strip()
+    created_before = request.GET.get('created_before', '').strip()
+
+    qs = Project.objects.filter(is_deleted=False).order_by('-created_at')
+    if q:
+        qs = qs.filter(Q(title__icontains=q) | Q(owner__username__icontains=q) | Q(description__icontains=q))
+
+    # date range filtering (optional)
+    try:
+        if created_after:
+            qs = qs.filter(created_at__gte=created_after)
+        if created_before:
+            qs = qs.filter(created_at__lte=created_before)
+    except Exception:
+        # If parsing/filtering fails, ignore the date filters
+        pass
+
+    projects = list(qs)
+    if status:
+        projects = [p for p in projects if p.status == status]
+
+    # If this is an AJAX/XHR request, return a partial (table rows) to update dynamically
+    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+    if is_xhr:
+        return render(request, 'projects/_submitted_projects_list.html', {'projects': projects})
+
+    return render(request, 'projects/submitted_projects.html', {
+        'projects': projects,
+        'q': q,
+        'status': status,
+        'created_after': created_after,
+        'created_before': created_before,
     })
 
 @login_required
@@ -170,7 +244,7 @@ def upload_version(request, pk):
 @login_required
 @require_role('F', message='Access denied: only faculty or staff may review projects.')
 def review_project(request, pk):
-    """Allow faculty or staff to submit a review for a project (UC-12..UC-17).
+    """Allow faculty or staff to submit a review for a project.
 
     Students are not allowed to review. After saving the review, redirect back
     to the project detail.
@@ -202,14 +276,14 @@ def review_project(request, pk):
 @login_required
 @require_role('F', raise_404=True)
 def submitted_projects(request):
-    """List all submitted (non-deleted) projects for faculty/admin (UC-11)."""
+    """List all submitted (non-deleted) projects for faculty/admin."""
     projects = Project.objects.filter(is_deleted=False).order_by('-created_at')
     return render(request, 'projects/submitted_projects.html', {'projects': projects})
 
 
 @login_required
 def delete_project(request, pk):
-    """Soft-delete a project (UC-10). Owners and staff can perform this action."""
+    """Soft-delete a project. Owners and staff can perform this action."""
     proj = get_object_or_404(Project, pk=pk)
     # Only owner or staff can delete. Faculty may not delete others' projects.
     if proj.owner != request.user and not request.user.is_staff:

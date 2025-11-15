@@ -11,5 +11,7 @@ urlpatterns = [
     path('<int:pk>/delete/', views.delete_project, name='delete_project'),
     path('<int:pk>/upload/', views.upload_version, name='upload_version'),
     path('<int:pk>/review/', views.review_project, name='review_project'),
+    path('<int:pk>/admin_override/', views.admin_override_status, name='admin_override_status'),
+    path('search/', views.search_projects, name='search_projects'),
     path('<int:pk>/download/<int:version_pk>/', views.download_version, name='download_version'),
 ]

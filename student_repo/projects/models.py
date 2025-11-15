@@ -9,7 +9,7 @@ class Project(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # soft-delete flag and timestamp for UC-10 and auditability
+    # soft-delete flag and timestamp for auditability
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
 

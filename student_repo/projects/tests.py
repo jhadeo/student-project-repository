@@ -280,3 +280,61 @@ class ProjectsTests(TestCase):
         self.assertIn('OwnerListProj', content)
         # other user's project title must NOT be present
         self.assertNotIn('OtherListProj', content)
+
+    def test_admin_can_override_status(self):
+        # owner and project
+        owner = User.objects.create_user('owner_admin', password='pw')
+        Profile.objects.create(user=owner, type='S')
+        proj = Project.objects.create(owner=owner, title='AdminOver', description='d')
+        ProjectVersion.objects.create(project=proj, version_number=1)
+
+        # admin user
+        admin = User.objects.create_user('adminu', password='pw')
+        admin.is_staff = True
+        admin.save()
+        Profile.objects.create(user=admin, type='A')
+
+        # perform override to Approved
+        self.client.login(username='adminu', password='pw')
+        url = reverse('projects:admin_override_status', args=[proj.pk])
+        resp = self.client.post(url, {'decision': 'A', 'feedback': 'Admin override'}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        proj.refresh_from_db()
+        self.assertEqual(proj.status, 'Approved')
+
+    def test_search_and_filter_projects(self):
+        # create multiple projects with various statuses
+        u1 = User.objects.create_user('u1', password='pw')
+        Profile.objects.create(user=u1, type='S')
+        p1 = Project.objects.create(owner=u1, title='Alpha Project', description='d')
+
+        u2 = User.objects.create_user('u2', password='pw')
+        Profile.objects.create(user=u2, type='S')
+        p2 = Project.objects.create(owner=u2, title='Beta Project', description='d')
+        # create approved review for p2
+        from .models import Review
+        Review.objects.create(project=p2, reviewer=u2, decision=Review.DECISION_APPROVED)
+
+        u3 = User.objects.create_user('u3', password='pw')
+        Profile.objects.create(user=u3, type='S')
+        p3 = Project.objects.create(owner=u3, title='Gamma Project', description='d')
+        Review.objects.create(project=p3, reviewer=u3, decision=Review.DECISION_REJECTED)
+
+        # faculty to run searches
+        fac = User.objects.create_user('fac_srch', password='pw')
+        Profile.objects.create(user=fac, type='F')
+        self.client.login(username='fac_srch', password='pw')
+
+        # search by title substring
+        url = reverse('projects:search_projects') + '?q=Alpha'
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('Alpha Project', resp.content.decode('utf-8'))
+
+        # filter by status Approved should return only p2
+        url2 = reverse('projects:search_projects') + '?status=Approved'
+        resp2 = self.client.get(url2)
+        self.assertEqual(resp2.status_code, 200)
+        body = resp2.content.decode('utf-8')
+        self.assertIn('Beta Project', body)
+        self.assertNotIn('Alpha Project', body)

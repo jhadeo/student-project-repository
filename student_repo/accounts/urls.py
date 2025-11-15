@@ -17,7 +17,7 @@ urlpatterns = [
     path('dashboard/admin/', views.admin_dashboard, name='dashboard_admin'),
     # post-login redirect — sends users to the right dashboard/profile
     path('dashboard/', views.post_login_redirect, name='post_login'),
-    # Admin user management (UC-04)
+    # Admin user management
     path('manage/', views.manage_users, name='manage_users'),
     path('manage/<int:user_id>/', views.edit_user, name='edit_user'),
     path('manage/<int:user_id>/delete/', views.delete_user, name='delete_user'),

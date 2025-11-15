@@ -1,24 +1,80 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Submitted Projects</h1>
-<table>
-  <thead>
-    <tr><th>Title</th><th>Owner</th><th>Created</th><th>Actions</th></tr>
-  </thead>
-  <tbody>
-    {% for p in projects %}
-    <tr>
-      <td><a href="{% url 'projects:project_detail' p.pk %}">{{ p.title }}</a></td>
-      <td>{{ p.owner.username }}</td>
-      <td>{{ p.created_at }}</td>
-      <td>
-        <a href="{% url 'projects:project_detail' p.pk %}">View</a>
-        {% if request.user.is_staff or p.owner == request.user %}
-         | <a href="{% url 'projects:delete_project' p.pk %}">Delete</a>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<form id="search-form" method="get" action="{% url 'projects:search_projects' %}" style="margin-bottom:1em;">
+  <input id="q-input" type="text" name="q" placeholder="Search title, owner or description" value="{{ q|default:'' }}">
+  <select id="status-select" name="status">
+    <option value="">Any status</option>
+    <option value="Pending" {% if status == 'Pending' %}selected{% endif %}>Pending</option>
+    <option value="Approved" {% if status == 'Approved' %}selected{% endif %}>Approved</option>
+    <option value="Rejected" {% if status == 'Rejected' %}selected{% endif %}>Rejected</option>
+  </select>
+  <label for="created_after">From</label>
+  <input id="created_after" type="date" name="created_after" value="{{ created_after|default:'' }}">
+  <label for="created_before">To</label>
+  <input id="created_before" type="date" name="created_before" value="{{ created_before|default:'' }}">
+  <button id="search-submit" type="submit">Search</button>
+</form>
+
+<div id="results">
+  <table>
+    <thead>
+      <tr><th>Title</th><th>Owner</th><th>Status</th><th>Created</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="results-body">
+      {% include 'projects/_submitted_projects_list.html' %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+// Dynamic search & filter for submitted projects.
+// Debounce helper
+function debounce(fn, wait) {
+  let t;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
+
+const form = document.getElementById('search-form');
+const qInput = document.getElementById('q-input');
+const statusSelect = document.getElementById('status-select');
+const createdAfter = document.getElementById('created_after');
+const createdBefore = document.getElementById('created_before');
+const resultsBody = document.getElementById('results-body');
+
+async function fetchResults() {
+  const params = new URLSearchParams(new FormData(form));
+  const url = `${form.action}?${params.toString()}`;
+  // show a simple loading state
+  const previous = resultsBody.innerHTML;
+  resultsBody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+  try {
+    const resp = await fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+    if (!resp.ok) throw new Error('Network error');
+    const text = await resp.text();
+    // Server returns only the tbody rows when X-Requested-With is set
+    resultsBody.innerHTML = text;
+  } catch (err) {
+    resultsBody.innerHTML = previous;
+    console.error('Search failed', err);
+  }
+}
+
+const debouncedFetch = debounce(fetchResults, 350);
+
+// wire up events
+qInput.addEventListener('input', debouncedFetch);
+statusSelect.addEventListener('change', fetchResults);
+createdAfter.addEventListener('change', fetchResults);
+createdBefore.addEventListener('change', fetchResults);
+
+// prevent full form submit when JS is available; still works as progressive enhancement
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+  fetchResults();
+});
+</script>
 {% endblock %}
