@@ -8,4 +8,5 @@ urlpatterns = [
     path('create/', views.create_project, name='create_project'),
     path('<int:pk>/', views.project_detail, name='project_detail'),
     path('<int:pk>/upload/', views.upload_version, name='upload_version'),
+    path('<int:pk>/download/<int:version_pk>/', views.download_version, name='download_version'),
 ]

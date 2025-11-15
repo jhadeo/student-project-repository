@@ -9,7 +9,16 @@
 {% if versions %}
   <ul>
   {% for v in versions %}
-    <li>v{{ v.version_number }} - {{ v.created_at|date:'Y-m-d H:i' }} {% if v.uploaded_file %}- <a href="{{ v.uploaded_file.url }}">download</a>{% endif %}</li>
+    <li>
+      v{{ v.version_number }} - {{ v.created_at|date:'Y-m-d H:i' }}
+  {% if v.uploaded_file %}- <a href="{% url 'projects:download_version' project.pk v.pk %}">download</a>{% endif %}
+      {% if v.title_snapshot %}
+        <div><strong>Title snapshot:</strong> {{ v.title_snapshot }}</div>
+      {% endif %}
+      {% if v.description_snapshot %}
+        <div><strong>Description snapshot:</strong> {{ v.description_snapshot }}</div>
+      {% endif %}
+    </li>
   {% endfor %}
   </ul>
 {% else %}

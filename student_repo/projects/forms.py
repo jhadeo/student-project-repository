@@ -13,7 +13,7 @@ class ProjectForm(forms.ModelForm):
 class ProjectVersionForm(forms.ModelForm):
     class Meta:
         model = ProjectVersion
-        fields = ['uploaded_file']
+        fields = ['uploaded_file', 'title_snapshot', 'description_snapshot']
 
     def clean_uploaded_file(self):
         f = self.cleaned_data.get('uploaded_file')

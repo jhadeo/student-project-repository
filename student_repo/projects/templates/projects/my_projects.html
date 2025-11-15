@@ -11,7 +11,7 @@
         <a href="{% url 'projects:project_detail' p.pk %}">{{ p.title }}</a> - {{ p.created_at|date:'Y-m-d' }}
         {% if p.latest_version %}
           &mdash; latest: v{{ p.latest_version.version_number }} ({{ p.latest_version.created_at|date:'Y-m-d' }})
-          {% if p.latest_version.uploaded_file %}- <a href="{{ p.latest_version.uploaded_file.url }}">download</a>{% endif %}
+          {% if p.latest_version.uploaded_file %}- <a href="{% url 'projects:download_version' p.pk p.latest_version.pk %}">download</a>{% endif %}
         {% endif %}
       </li>
     {% endfor %}

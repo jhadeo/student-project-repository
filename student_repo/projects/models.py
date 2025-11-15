@@ -23,6 +23,8 @@ class ProjectVersion(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='versions')
     uploaded_file = models.FileField(upload_to='project_uploads/', blank=True, null=True)
     version_number = models.PositiveIntegerField(default=1)
+    title_snapshot = models.CharField(max_length=200, blank=True)
+    description_snapshot = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
