@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Delete project: {{ project.title }}</h1>
+<p>Are you sure you want to delete this project? This will soft-delete it so it won't appear in lists.</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Yes, delete</button>
+  <a href="{% url 'projects:project_detail' project.pk %}">Cancel</a>
+</form>
+{% endblock %}

@@ -11,7 +11,7 @@
 </ul>
 <h2>Quick actions</h2>
 <ul>
-  <li><a href="#">Site reports</a></li>
-  <li><a href="#">Manage users</a></li>
+  <li><a href="{% url 'admin:index' %}">Site reports (admin)</a></li>
+  <li><a href="{% url 'accounts:manage_users' %}">Manage users</a></li>
 </ul>
 {% endblock %}

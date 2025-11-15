@@ -1,3 +1,67 @@
+from django.test import TestCase, Client
+from django.urls import reverse
+from django.contrib.auth import get_user_model
+from .models import Project, ProjectVersion
+from accounts.models import Profile
+
+
+class ProjectSoftDeleteAndSubmittedTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        # create users
+        self.student = User.objects.create_user(username='student', password='pass')
+        Profile.objects.create(user=self.student, type='S')
+
+        self.faculty = User.objects.create_user(username='faculty', password='pass')
+        Profile.objects.create(user=self.faculty, type='F')
+
+        self.staff = User.objects.create_user(username='staff', password='pass')
+        self.staff.is_staff = True
+        self.staff.save()
+        Profile.objects.create(user=self.staff, type='A')
+
+        # create a project owned by student
+        self.proj = Project.objects.create(owner=self.student, title='T1', description='D')
+
+        self.client = Client()
+
+    def test_submitted_projects_access(self):
+        url = reverse('projects:submitted_projects')
+        # student should be denied
+        self.client.login(username='student', password='pass')
+        resp = self.client.get(url)
+        self.assertNotEqual(resp.status_code, 200)
+        self.client.logout()
+
+        # faculty can access
+        self.client.login(username='faculty', password='pass')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'T1')
+        self.client.logout()
+
+        # staff can access
+        self.client.login(username='staff', password='pass')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'T1')
+
+    def test_soft_delete_project(self):
+        del_url = reverse('projects:delete_project', args=[self.proj.pk])
+        # non-owner cannot delete
+        self.client.login(username='faculty', password='pass')
+        resp = self.client.post(del_url)
+        self.assertNotEqual(resp.status_code, 302)  # should not redirect as deletion forbidden
+        self.proj.refresh_from_db()
+        self.assertFalse(self.proj.is_deleted)
+        self.client.logout()
+
+        # owner can delete
+        self.client.login(username='student', password='pass')
+        resp = self.client.post(del_url)
+        self.assertEqual(resp.status_code, 302)
+        self.proj.refresh_from_db()
+        self.assertTrue(self.proj.is_deleted)
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -31,6 +95,22 @@ class ProjectsTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(proj.versions.count(), 2)
 
+    def test_faculty_cannot_upload_version(self):
+        # project owned by student
+        owner = User.objects.create_user('owner_u', password='pw')
+        Profile.objects.create(user=owner, type='S')
+        proj = Project.objects.create(owner=owner, title='OwnerProjU', description='d')
+        # faculty user
+        fac = User.objects.create_user('fac_u', password='pw')
+        Profile.objects.create(user=fac, type='F')
+        self.client.login(username='fac_u', password='pw')
+        url = reverse('projects:upload_version', args=[proj.pk])
+        txt = SimpleUploadedFile('v_fac.zip', b'PK\x03\x04v')
+        resp = self.client.post(url, {'uploaded_file': txt}, follow=True)
+        # faculty should not be allowed to upload; ensure no new versions
+        proj.refresh_from_db()
+        self.assertEqual(proj.versions.count(), 0)
+
     def test_reject_non_archive_upload(self):
         u = User.objects.create_user('stu3', password='pw')
         self.client.login(username='stu3', password='pw')
@@ -41,6 +121,16 @@ class ProjectsTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         # project should be created
         self.assertTrue(Project.objects.filter(title='Any').exists())
+
+    def test_faculty_cannot_create_project(self):
+        fac = User.objects.create_user('fac2', password='pw')
+        Profile.objects.create(user=fac, type='F')
+        self.client.login(username='fac2', password='pw')
+        url = reverse('projects:create_project')
+        resp = self.client.post(url, {'title': 'Forbidden', 'description': 'x'}, follow=True)
+        # faculty should not be able to create projects
+        self.assertNotEqual(resp.status_code, 200)
+        self.assertFalse(Project.objects.filter(title='Forbidden').exists())
 
     def test_upload_version_with_metadata_updates_project_and_saves_snapshot(self):
         u = User.objects.create_user('stu4', password='pw')

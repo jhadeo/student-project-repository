@@ -1,3 +1,68 @@
+from django.test import TestCase, Client
+from django.urls import reverse
+from django.contrib.auth import get_user_model
+from .models import Profile
+
+
+class AdminUserManagementTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        # create admin/staff user
+        self.admin = User.objects.create_user(username='admin', email='admin@example.com', password='pass')
+        self.admin.is_staff = True
+        self.admin.save()
+        Profile.objects.create(user=self.admin, type='A')
+
+        # create a normal user
+        self.user = User.objects.create_user(username='alice', email='alice@example.com', password='pass')
+        Profile.objects.create(user=self.user, type='S')
+
+        self.client = Client()
+
+    def test_manage_users_access_control(self):
+        # anon should be redirected to login
+        resp = self.client.get(reverse('accounts:manage_users'))
+        self.assertIn(resp.status_code, (302, 301))
+
+        # non-staff should be redirected/denied
+        self.client.login(username='alice', password='pass')
+        resp = self.client.get(reverse('accounts:manage_users'))
+        self.assertNotEqual(resp.status_code, 200)
+        self.client.logout()
+
+        # staff can access
+        self.client.login(username='admin', password='pass')
+        resp = self.client.get(reverse('accounts:manage_users'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'alice')
+
+    def test_edit_and_delete_user_by_admin(self):
+        self.client.login(username='admin', password='pass')
+        # edit alice's email via edit_user
+        url = reverse('accounts:edit_user', args=[self.user.id])
+        resp = self.client.post(url, {'username': 'alice', 'email': 'alice2@example.com', 'full_name': 'Alice'})
+        self.assertEqual(resp.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, 'alice2@example.com')
+
+        # delete alice
+        url = reverse('accounts:delete_user', args=[self.user.id])
+        resp = self.client.post(url)
+        self.assertEqual(resp.status_code, 302)
+        User = get_user_model()
+        self.assertFalse(User.objects.filter(pk=self.user.id).exists())
+
+    def test_prevent_blanking_sole_admin(self):
+        """Ensure that submitting profile updates without 'type' does not remove the sole admin's type."""
+        # admin is staff and currently the only admin (created in setUp)
+        self.client.login(username='admin', password='pass')
+        # post to the profile view with only full_name (no 'type' field)
+        resp = self.client.post(reverse('profile'), {'full_name': 'Head Admin'})
+        # should redirect back to profile
+        self.assertRedirects(resp, reverse('profile'))
+        # reload profile and ensure type is still 'A'
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.profile.type, 'A')
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model

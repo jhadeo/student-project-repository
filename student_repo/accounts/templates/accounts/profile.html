@@ -48,9 +48,19 @@
             </div>
             <div class="field">
                 {% if request.user.is_staff %}
-                    {{ form.type.label_tag }}<br>
-                    {{ form.type }}
-                    {{ form.type.errors }}
+                    <label>{{ form.type.label }}</label><br>
+                    <select name="type" id="id_type" {% if form.type.field.disabled %}disabled{% endif %}>
+                        {% for code,label in acc_types %}
+                            <option value="{{ code }}" {% if profile.type == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if form.type.errors %}
+                        <div class="errors">{{ form.type.errors }}</div>
+                    {% endif %}
+                    {# If the select is disabled, include a hidden input so the value is submitted #}
+                    {% if form.type.field.disabled %}
+                        <input type="hidden" name="type" value="{{ profile.type }}">
+                    {% endif %}
                 {% else %}
                     <label>Type</label>
                     <div class="readonly">{{ profile.get_type_display|default:"Not set" }}</div>

@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from .forms import RegistrationForm, ProfileForm, UserForm
-from .models import Profile
+from .models import Profile, AccType
+from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
@@ -51,8 +52,9 @@ def profile(request):
             if profile_form.is_valid():
                 # save but prevent non-staff users from changing 'type'
                 pf = profile_form.save(commit=False)
-                if not request.user.is_staff:
-                    # preserve existing type
+                # preserve existing type when the requester is not staff
+                # OR when this profile is the only admin (disabled field for sole admin)
+                if (not request.user.is_staff) or (profile.type == 'A' and Profile.objects.filter(type='A').count() == 1):
                     pf.type = profile.type
                 pf.save()
                 messages.success(request, 'Profile updated successfully.')
@@ -76,7 +78,11 @@ def profile(request):
                 profile_form = ProfileForm(request.POST, instance=profile)
                 user_form = UserForm(instance=user)
                 if profile_form.is_valid():
-                    profile_form.save()
+                    # preserve existing type for non-staff or sole-admin (prevent blanking)
+                    pf = profile_form.save(commit=False)
+                    if (not request.user.is_staff) or (profile.type == 'A' and Profile.objects.filter(type='A').count() == 1):
+                        pf.type = profile.type
+                    pf.save()
                     messages.success(request, 'Profile updated successfully.')
                     return redirect('profile')
             elif post_keys & user_keys:
@@ -92,20 +98,37 @@ def profile(request):
                 profile_form = ProfileForm(request.POST, instance=profile)
             if user_form.is_valid() and profile_form.is_valid():
                 user_form.save()
-                profile_form.save()
+                # preserve existing type for non-staff or sole-admin to avoid accidentally removing admin
+                pf = profile_form.save(commit=False)
+                if (not request.user.is_staff) or (profile.type == 'A' and Profile.objects.filter(type='A').count() == 1):
+                    pf.type = profile.type
+                pf.save()
                 messages.success(request, 'Account and profile updated successfully.')
                 return redirect('profile')
     else:
         user_form = UserForm(instance=user)
         profile_form = ProfileForm(instance=profile)
     # disable 'type' editing for non-staff in the rendered form
+    # disable 'type' editing for non-staff in the rendered form
     if not request.user.is_staff:
         try:
             profile_form.fields['type'].disabled = True
         except Exception:
             pass
+    # additionally, if this user is the only admin, even staff cannot change their own type
+    try:
+        if profile.type == 'A' and Profile.objects.filter(type='A').count() == 1:
+            profile_form.fields['type'].disabled = True
+    except Exception:
+        pass
     pwd_form = PasswordChangeForm(request.user)
-    return render(request, 'accounts/profile.html', {'profile': profile, 'user_form': user_form, 'form': profile_form, 'pwd_form': pwd_form})
+    return render(request, 'accounts/profile.html', {
+        'profile': profile,
+        'user_form': user_form,
+        'form': profile_form,
+        'pwd_form': pwd_form,
+        'acc_types': AccType.choices,
+    })
 
 
 @require_http_methods(["GET", "POST"])
@@ -172,6 +195,93 @@ def admin_dashboard(request):
     return redirect('profile')
 
 # Create your views here.
+
+
+@login_required
+def manage_users(request):
+    """List users for admin management (UC-04)."""
+    if not request.user.is_staff:
+        messages.error(request, 'Access denied: admin only.')
+        return redirect('profile')
+    User = get_user_model()
+    users = User.objects.all().order_by('username')
+    # number of admin profiles (type 'A') to protect sole admin
+    admin_count = Profile.objects.filter(type='A').count()
+    return render(request, 'accounts/manage_users.html', {'users': users, 'admin_count': admin_count})
+
+
+@login_required
+def edit_user(request, user_id):
+    """Edit a user's basic info and profile. Admin-only (UC-04)."""
+    if not request.user.is_staff:
+        messages.error(request, 'Access denied: admin only.')
+        return redirect('profile')
+    User = get_user_model()
+    user = User.objects.filter(pk=user_id).first()
+    if not user:
+        messages.error(request, 'User not found.')
+        return redirect('accounts:manage_users')
+    profile, _ = Profile.objects.get_or_create(user=user)
+    if request.method == 'POST':
+        user_form = UserForm(request.POST, instance=user)
+        profile_form = ProfileForm(request.POST, instance=profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            pf = profile_form.save(commit=False)
+            # protect sole admin: if the target is currently the only admin,
+            # do not allow changing their type away from 'A'
+            if profile.type == 'A' and Profile.objects.filter(type='A').count() == 1:
+                pf.type = 'A'
+            pf.save()
+            messages.success(request, 'User updated.')
+            return redirect('accounts:manage_users')
+    else:
+        user_form = UserForm(instance=user)
+        profile_form = ProfileForm(instance=profile)
+    # If the target user is the only admin, disable the 'type' dropdown so it cannot be changed
+    try:
+        if profile.type == 'A' and Profile.objects.filter(type='A').count() == 1:
+            profile_form.fields['type'].disabled = True
+    except Exception:
+        pass
+    disable_type = False
+    try:
+        if profile.type == 'A' and Profile.objects.filter(type='A').count() == 1:
+            disable_type = True
+    except Exception:
+        pass
+    return render(request, 'accounts/edit_user.html', {
+        'user_obj': user,
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'acc_types': AccType.choices,
+        'profile': profile,
+        'disable_type': disable_type,
+    })
+
+
+@login_required
+def delete_user(request, user_id):
+    """Delete a user (admin-only). This performs a hard delete via Django ORM."""
+    if not request.user.is_staff:
+        messages.error(request, 'Access denied: admin only.')
+        return redirect('profile')
+    User = get_user_model()
+    user = User.objects.filter(pk=user_id).first()
+    if not user:
+        messages.error(request, 'User not found.')
+        return redirect('accounts:manage_users')
+    if request.method == 'POST':
+        # prevent deleting the sole admin account
+        target_profile = Profile.objects.filter(user=user).first()
+        if target_profile and target_profile.type == 'A' and Profile.objects.filter(type='A').count() == 1:
+            messages.error(request, 'Cannot delete the only admin account.')
+            return redirect('accounts:manage_users')
+        username = str(user.username)
+        user.delete()
+        messages.success(request, f'User {username} deleted.')
+        return redirect('accounts:manage_users')
+    return render(request, 'accounts/confirm_delete_user.html', {'user_obj': user})
 
 
 def post_login_redirect(request):

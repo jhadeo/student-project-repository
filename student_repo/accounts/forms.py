@@ -36,7 +36,8 @@ class RegistrationForm(UserCreationForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ('full_name',)
+        # include 'type' so admin can change account types via dropdown
+        fields = ('full_name', 'type')
 
 from django.contrib.auth import get_user_model
 

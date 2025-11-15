@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Edit user: {{ user_obj.username }}</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ user_form.non_field_errors }}
+  <div class="field">
+    {{ user_form.username.label_tag }}<br>
+    {{ user_form.username }}
+    {{ user_form.username.errors }}
+  </div>
+  <div class="field">
+    {{ user_form.email.label_tag }}<br>
+    {{ user_form.email }}
+    {{ user_form.email.errors }}
+  </div>
+  <h3>Profile</h3>
+  <div class="field">
+    {{ profile_form.full_name.label_tag }}<br>
+    {{ profile_form.full_name }}
+    {{ profile_form.full_name.errors }}
+  </div>
+  <div class="field">
+    <label>{{ profile_form.type.label }}</label><br>
+    <select name="type" id="id_type" {% if disable_type %}disabled{% endif %}>
+      {% for code,label in acc_types %}
+        <option value="{{ code }}" {% if profile.type == code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% if profile_form.type.errors %}
+      <div class="errors">{{ profile_form.type.errors }}</div>
+    {% endif %}
+    {% if disable_type %}
+      <input type="hidden" name="type" value="{{ profile.type }}">
+    {% endif %}
+  </div>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

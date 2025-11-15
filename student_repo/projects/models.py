@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Project(models.Model):
@@ -8,9 +9,18 @@ class Project(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # soft-delete flag and timestamp for UC-10 and auditability
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.title} ({self.owner.username})"
+
+    def soft_delete(self):
+        """Soft-delete the project instead of hard removing it from the DB."""
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save()
 
     @property
     def latest_version(self):

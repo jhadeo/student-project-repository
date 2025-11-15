@@ -6,7 +6,9 @@ app_name = 'projects'
 urlpatterns = [
     path('', views.my_projects, name='my_projects'),
     path('create/', views.create_project, name='create_project'),
+    path('submitted/', views.submitted_projects, name='submitted_projects'),
     path('<int:pk>/', views.project_detail, name='project_detail'),
+    path('<int:pk>/delete/', views.delete_project, name='delete_project'),
     path('<int:pk>/upload/', views.upload_version, name='upload_version'),
     path('<int:pk>/download/<int:version_pk>/', views.download_version, name='download_version'),
 ]

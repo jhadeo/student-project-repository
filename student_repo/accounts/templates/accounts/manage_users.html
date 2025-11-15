@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Manage Users</h1>
+<table>
+  <thead>
+    <tr><th>Username</th><th>Email</th><th>Type</th><th>Active</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.username }}</td>
+      <td>{{ u.email }}</td>
+      <td>{{ u.profile.type }}</td>
+      <td>{{ u.is_active }}</td>
+      <td>
+        <a href="{% url 'accounts:edit_user' u.id %}">Edit</a>
+        |
+  {% comment %}Hide delete link for sole admin to prevent accidental removal{% endcomment %}
+  {% if u.profile.type == 'A' and admin_count == 1 %}
+  <span title="Cannot delete the only admin">Delete</span>
+  {% else %}
+  <a href="{% url 'accounts:delete_user' u.id %}">Delete</a>
+  {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

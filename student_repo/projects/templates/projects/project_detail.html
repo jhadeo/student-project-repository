@@ -25,12 +25,20 @@
   <p>No versions yet.</p>
 {% endif %}
 
-<h3>Upload new version</h3>
-<form method="post" enctype="multipart/form-data" action="{% url 'projects:upload_version' project.pk %}">{% csrf_token %}
-  {{ file_form.as_p }}
-  <p class="hint">Only a single file is accepted (any type). Max size: 10MB by default.</p>
-  <button type="submit">Upload</button>
-</form>
+{% if can_upload %}
+  <h3>Upload new version</h3>
+  <form method="post" enctype="multipart/form-data" action="{% url 'projects:upload_version' project.pk %}">{% csrf_token %}
+    {{ file_form.as_p }}
+    <p class="hint">Only a single file is accepted (any type). Max size: 10MB by default.</p>
+    <button type="submit">Upload</button>
+  </form>
+{% else %}
+  <p><em>Uploading new versions is restricted to the project owner and site staff.</em></p>
+{% endif %}
 
-<p><a href="{% url 'projects:my_projects' %}">Back to my projects</a></p>
+{% if is_faculty and not request.user.is_staff %}
+  <p><a href="{% url 'projects:submitted_projects' %}">Back to submitted projects</a></p>
+{% else %}
+  <p><a href="{% url 'projects:my_projects' %}">Back to my projects</a></p>
+{% endif %}
 {% endblock %}

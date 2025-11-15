@@ -11,8 +11,8 @@
 </ul>
 <h2>Quick actions</h2>
 <ul>
-  <li><a href="#">Review submissions</a></li>
-  <li><a href="#">Search/filter projects</a></li>
+  <li><a href="{% url 'projects:submitted_projects' %}">Review submissions</a></li>
+  <li><a href="{% url 'projects:submitted_projects' %}">Search / filter projects</a> <!-- placeholder: search not implemented yet --></li>
   <li><a href="{% url 'profile' %}">Edit profile</a></li>
 </ul>
 {% endblock %}

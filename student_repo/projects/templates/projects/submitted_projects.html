@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Submitted Projects</h1>
+<table>
+  <thead>
+    <tr><th>Title</th><th>Owner</th><th>Created</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+    {% for p in projects %}
+    <tr>
+      <td><a href="{% url 'projects:project_detail' p.pk %}">{{ p.title }}</a></td>
+      <td>{{ p.owner.username }}</td>
+      <td>{{ p.created_at }}</td>
+      <td>
+        <a href="{% url 'projects:project_detail' p.pk %}">View</a>
+        {% if request.user.is_staff or p.owner == request.user %}
+         | <a href="{% url 'projects:delete_project' p.pk %}">Delete</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
