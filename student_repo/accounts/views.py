@@ -10,6 +10,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import logout as auth_logout
 from django.conf import settings
 from django.views.decorators.http import require_http_methods
+from .decorators import require_role, forbid_role
 
 
 def register(request):
@@ -142,67 +143,59 @@ from django.shortcuts import render
 
 # Dashboards
 @login_required
+@require_role('S', message='Access denied: student dashboard only.')
 def student_dashboard(request):
     """Simple student dashboard. Only accessible to users with Profile.type == 'S'."""
     profile = getattr(request.user, 'profile', None)
-    if profile and profile.type == 'S':
-        context = {
-            'profile': profile,
-            'usecases': [
-                'UC-01: Accounts & Profiles',
-                'UC-06: Project submission (student-facing)',
-                'UC-13: View feedback/reviews'
-            ]
-        }
-        return render(request, 'accounts/dashboards/student_dashboard.html', context)
-    messages.error(request, 'Access denied: student dashboard only.')
-    return redirect('profile')
+    context = {
+        'profile': profile,
+        'usecases': [
+            'UC-01: Accounts & Profiles',
+            'UC-06: Project submission (student-facing)',
+            'UC-13: View feedback/reviews'
+        ]
+    }
+    return render(request, 'accounts/dashboards/student_dashboard.html', context)
 
 
 @login_required
+@require_role('F', message='Access denied: faculty dashboard only.')
 def faculty_dashboard(request):
     """Simple faculty dashboard. Accessible to users with Profile.type == 'F' or staff."""
     profile = getattr(request.user, 'profile', None)
-    if request.user.is_staff or (profile and profile.type == 'F'):
-        context = {
-            'profile': profile,
-            'usecases': [
-                'UC-11..UC-17: Review workflow',
-                'UC-18: Search & Filter submissions',
-                'UC-21: Notifications (placeholder)'
-            ]
-        }
-        return render(request, 'accounts/dashboards/faculty_dashboard.html', context)
-    messages.error(request, 'Access denied: faculty dashboard only.')
-    return redirect('profile')
+    context = {
+        'profile': profile,
+        'usecases': [
+            'UC-11..UC-17: Review workflow',
+            'UC-18: Search & Filter submissions',
+            'UC-21: Notifications (placeholder)'
+        ]
+    }
+    return render(request, 'accounts/dashboards/faculty_dashboard.html', context)
 
 
 @login_required
+@require_role('A', message='Access denied: admin dashboard only.')
 def admin_dashboard(request):
     """Admin dashboard. Requires staff privileges or Profile.type == 'A'."""
     profile = getattr(request.user, 'profile', None)
-    if request.user.is_staff or (profile and profile.type == 'A'):
-        context = {
-            'profile': profile,
-            'usecases': [
-                'UC-25..UC-28: Ops, backups, audit logs',
-                'UC-22: Reporting & aggregates',
-                'UC-27: Soft deletes / audit trail'
-            ]
-        }
-        return render(request, 'accounts/dashboards/admin_dashboard.html', context)
-    messages.error(request, 'Access denied: admin dashboard only.')
-    return redirect('profile')
+    context = {
+        'profile': profile,
+        'usecases': [
+            'UC-25..UC-28: Ops, backups, audit logs',
+            'UC-22: Reporting & aggregates',
+            'UC-27: Soft deletes / audit trail'
+        ]
+    }
+    return render(request, 'accounts/dashboards/admin_dashboard.html', context)
 
 # Create your views here.
 
 
 @login_required
+@require_role('A', message='Access denied: admin only.')
 def manage_users(request):
     """List users for admin management (UC-04)."""
-    if not request.user.is_staff:
-        messages.error(request, 'Access denied: admin only.')
-        return redirect('profile')
     User = get_user_model()
     users = User.objects.all().order_by('username')
     # number of admin profiles (type 'A') to protect sole admin
@@ -211,11 +204,9 @@ def manage_users(request):
 
 
 @login_required
+@require_role('A', message='Access denied: admin only.')
 def edit_user(request, user_id):
     """Edit a user's basic info and profile. Admin-only (UC-04)."""
-    if not request.user.is_staff:
-        messages.error(request, 'Access denied: admin only.')
-        return redirect('profile')
     User = get_user_model()
     user = User.objects.filter(pk=user_id).first()
     if not user:
@@ -261,11 +252,9 @@ def edit_user(request, user_id):
 
 
 @login_required
+@require_role('A', message='Access denied: admin only.')
 def delete_user(request, user_id):
     """Delete a user (admin-only). This performs a hard delete via Django ORM."""
-    if not request.user.is_staff:
-        messages.error(request, 'Access denied: admin only.')
-        return redirect('profile')
     User = get_user_model()
     user = User.objects.filter(pk=user_id).first()
     if not user:

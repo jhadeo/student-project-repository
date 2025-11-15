@@ -9,7 +9,8 @@ User = get_user_model()
 
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-    else:
-        Profile.objects.get_or_create(user=instance)
+    # Intentionally do not auto-create Profile on User.save() here.
+    # Tests and views in this project explicitly create or get_or_create
+    # profiles where needed. Auto-creating here caused duplicate creation
+    # races in some test setups, so keep the signal as a no-op for safety.
+    return

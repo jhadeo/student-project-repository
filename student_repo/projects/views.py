@@ -19,11 +19,8 @@ def my_projects(request):
 
 
 @login_required
+@forbid_role('F', redirect_to='dashboard_faculty', message='Access denied: faculty may not create project submissions.')
 def create_project(request):
-    # Prevent faculty users from creating project submissions. Redirect to dashboard with message.
-    if is_profile_type(request.user, 'F') and not request.user.is_staff:
-        messages.error(request, 'Access denied: faculty may not create project submissions.')
-        return redirect('dashboard_faculty')
     if request.method == 'POST':
         form = ProjectForm(request.POST)
         file_form = ProjectVersionForm(request.POST, request.FILES)
@@ -120,15 +117,12 @@ def download_version(request, pk, version_pk):
 
 
 @login_required
+@forbid_role('F', redirect_to='dashboard_faculty', message='Access denied: faculty may not upload project versions.')
 def upload_version(request, pk):
     proj = get_object_or_404(Project, pk=pk)
     if proj.is_deleted:
         raise Http404
-    # Only allow owners and staff to upload versions. Faculty (type 'F') may view and comment
-    # but must not upload new versions. Redirect faculty to dashboard with message.
-    if is_profile_type(request.user, 'F') and not request.user.is_staff:
-        messages.error(request, 'Access denied: faculty may not upload project versions.')
-        return redirect('dashboard_faculty')
+    # Students may only upload to their own projects; staff may upload to any.
     # Students may only upload to their own projects; staff may upload to any.
     if proj.owner != request.user and not request.user.is_staff:
         raise Http404
@@ -174,6 +168,7 @@ def upload_version(request, pk):
 
 
 @login_required
+@require_role('F', message='Access denied: only faculty or staff may review projects.')
 def review_project(request, pk):
     """Allow faculty or staff to submit a review for a project (UC-12..UC-17).
 
@@ -183,11 +178,6 @@ def review_project(request, pk):
     proj = get_object_or_404(Project, pk=pk)
     if proj.is_deleted:
         raise Http404
-    # Only faculty or staff can review
-    if not (request.user.is_staff or is_profile_type(request.user, 'F')):
-        messages.error(request, 'Access denied: only faculty or staff may review projects.')
-        return redirect('profile')
-
     # Prevent project owners from reviewing their own submissions
     if request.user == proj.owner:
         messages.error(request, 'Owners may not review their own projects.')
@@ -210,10 +200,9 @@ def review_project(request, pk):
 
 
 @login_required
+@require_role('F', raise_404=True)
 def submitted_projects(request):
     """List all submitted (non-deleted) projects for faculty/admin (UC-11)."""
-    if not (request.user.is_staff or is_profile_type(request.user, 'F')):
-        raise Http404
     projects = Project.objects.filter(is_deleted=False).order_by('-created_at')
     return render(request, 'projects/submitted_projects.html', {'projects': projects})
 
