@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+<h1>Student Dashboard</h1>
+<p>Welcome, {{ profile.full_name|default:request.user.username }} ({{ profile.user.username }})</p>
+<h2>Relevant use cases</h2>
+<ul>
+  {% for u in usecases %}
+    <li>{{ u }}</li>
+  {% endfor %}
+</ul>
+<h2>Quick actions</h2>
+<ul>
+  <li><a href="#">Submit a project (placeholder)</a></li>
+  <li><a href="#">View my submissions</a></li>
+  <li><a href="{% url 'profile' %}">Edit profile</a></li>
+</ul>
+{% endblock %}

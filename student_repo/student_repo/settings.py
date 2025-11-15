@@ -129,5 +129,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Redirects after login/logout
-LOGIN_REDIRECT_URL = 'profile'
+# After login, send users to a small dispatcher view which routes to the
+# correct dashboard based on their Profile.type (or to profile if unset).
+LOGIN_REDIRECT_URL = 'post_login'
 LOGOUT_REDIRECT_URL = 'login'

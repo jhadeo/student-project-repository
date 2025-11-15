@@ -17,11 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from accounts import views as accounts_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
-    # make the login page the site root
-    path('', auth_views.LoginView.as_view(template_name='registration/login.html'), name='home'),
-
+    # Home should route to a dispatcher that sends logged-in users to their
+    # dashboard and anonymous users to the login page.
+    path('', accounts_views.post_login_redirect, name='home'),
 ]
