@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load widget_tweaks %}
 {% block title %}Register{% endblock %}
 
 {% block content %}
@@ -47,7 +47,7 @@
                 
                 <div class="relative">
                   <!-- Icon based on field name -->
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                     {% if field.name == 'username' %}
                       <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -71,41 +71,22 @@
                     {% endif %}
                   </div>
                   
+                  <!-- Render the field with custom classes -->
                   {% if field.field.widget.input_type == 'select' %}
-                    <select 
-                      name="{{ field.name }}"
-                      id="{{ field.id_for_label }}"
-                      {% if field.field.required %}required{% endif %}
-                      class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors">
-                      {{ field }}
-                    </select>
+                    {{ field|add_class:"w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors appearance-none bg-white cursor-pointer" }}
                   {% elif field.field.widget.input_type == 'textarea' %}
-                    <textarea 
-                      name="{{ field.name }}"
-                      id="{{ field.id_for_label }}"
-                      {% if field.field.required %}required{% endif %}
-                      rows="3"
-                      class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                      placeholder="{{ field.label }}">{{ field.value|default:'' }}</textarea>
+                    {{ field|add_class:"w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" }}
                   {% else %}
-                    {% if 'password' in field.name %}
-                      <input 
-                        type="password"
-                        name="{{ field.name }}"
-                        id="{{ field.id_for_label }}"
-                        {% if field.field.required %}required{% endif %}
-                        class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                        placeholder="{{ field.label }}">
-                    {% else %}
-                      <input 
-                        type="{{ field.field.widget.input_type|default:'text' }}"
-                        name="{{ field.name }}"
-                        id="{{ field.id_for_label }}"
-                        {% if field.field.required %}required{% endif %}
-                        class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                        placeholder="{{ field.label }}"
-                        value="{{ field.value|default:'' }}">
-                    {% endif %}
+                    {{ field|add_class:"w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" }}
+                  {% endif %}
+                  
+                  <!-- Dropdown arrow icon for select fields -->
+                  {% if field.field.widget.input_type == 'select' %}
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </div>
                   {% endif %}
                 </div>
                 

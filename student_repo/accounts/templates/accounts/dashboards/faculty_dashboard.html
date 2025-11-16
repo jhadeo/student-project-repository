@@ -144,6 +144,21 @@
     </div>
     
     <div class="p-6">
+      {% if recent_submissions %}
+      <ul class="divide-y divide-gray-100">
+        {% for s in recent_submissions %}
+        <li class="py-3 flex items-start justify-between">
+          <div class="min-w-0">
+            <a href="{% url 'projects:project_detail' s.project_pk %}" class="text-sm font-medium text-gray-900 hover:text-orange-600">{{ s.title }}</a>
+            <p class="text-xs text-gray-500 mt-1">Submitted by {{ s.owner }} · {{ s.time|date:"M d, Y H:i" }}</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <a href="{% url 'projects:download_version' s.project_pk s.version_pk %}" class="text-sm text-orange-600 hover:text-orange-700">Download</a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
       <div class="text-center py-8">
         <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -151,6 +166,7 @@
         <p class="text-gray-500 text-sm">No recent submissions to display</p>
         <p class="text-gray-400 text-xs mt-1">Submissions will appear here once students upload their projects</p>
       </div>
+      {% endif %}
     </div>
   </div>
 </div>

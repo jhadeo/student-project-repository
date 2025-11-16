@@ -1,94 +1,267 @@
 {% extends 'base.html' %}
-{% block title %}Profile{% endblock %}
+
+{% block title %}My Profile{% endblock %}
+
 {% block content %}
-<div class="profile-page">
-    <header>
-        <h1>My Profile</h1>
-        <p>Welcome, <strong>{{ profile.full_name|default:request.user.username }}</strong></p>
-        <p>Account: <strong>{{ request.user.username }}</strong> • Email: <strong>{{ request.user.email }}</strong></p>
-        <p><a href="{% url 'home' %}">Go to Dashboard</a></p>
-    </header>
-
-    {% if messages %}
-        <section class="messages">
-            {% for m in messages %}
-                <div class="message {{ m.tags }}">{{ m }}</div>
-            {% endfor %}
-        </section>
-    {% endif %}
-
-    <section class="account-section">
-        <h2>Account</h2>
-        <form method="post">{% csrf_token %}
-            {{ user_form.non_field_errors }}
-            <div class="field">
-                {{ user_form.username.label_tag }}<br>
-                {{ user_form.username }}
-                {{ user_form.username.errors }}
-            </div>
-            <div class="field">
-                {{ user_form.email.label_tag }}<br>
-                {{ user_form.email }}
-                {{ user_form.email.errors }}
-            </div>
-            <div class="actions">
-                <button type="submit" name="save_account">Save account</button>
-            </div>
-        </form>
-    </section>
-
-    <section class="profile-section">
-        <h2>Profile</h2>
-        <form method="post">{% csrf_token %}
-            {{ form.non_field_errors }}
-            <div class="field">
-                {{ form.full_name.label_tag }}<br>
-                {{ form.full_name }}
-                {{ form.full_name.errors }}
-            </div>
-            <div class="field">
-                {% if request.user.is_staff %}
-                    <label>{{ form.type.label }}</label><br>
-                    <select name="type" id="id_type" {% if form.type.field.disabled %}disabled{% endif %}>
-                        {% for code,label in acc_types %}
-                            <option value="{{ code }}" {% if profile.type == code %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                    {% if form.type.errors %}
-                        <div class="errors">{{ form.type.errors }}</div>
-                    {% endif %}
-                    {# If the select is disabled, include a hidden input so the value is submitted #}
-                    {% if form.type.field.disabled %}
-                        <input type="hidden" name="type" value="{{ profile.type }}">
-                    {% endif %}
-                {% else %}
-                    <label>Type</label>
-                    <div class="readonly">{{ profile.get_type_display|default:"Not set" }}</div>
-                {% endif %}
-            </div>
-            <div class="actions">
-                <button type="submit" name="save_profile">Save profile</button>
-            </div>
-        </form>
-    </section>
-
-    <section class="security-section">
-        <h2>Security</h2>
-        <p><a href="{% url 'password_change' %}">Change password</a></p>
-    </section>
-
-    <section class="actions">
-        <form method="post" action="{% url 'logout' %}">{% csrf_token %}
-            <button type="submit">Logout</button>
-        </form>
-    </section>
+<!-- Profile Header -->
+<div class="mb-8">
+  <div class="bg-gradient-to-r from-orange-600 via-orange-500 to-maroon-800 rounded-2xl shadow-xl p-8 text-white">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-4xl font-bold mb-2">My Profile</h1>
+        <p class="text-orange-100 text-lg mb-2">
+          Welcome, <span class="font-semibold text-white">{{ profile.full_name|default:request.user.username }}</span>
+        </p>
+        <div class="flex items-center space-x-4 text-sm text-orange-200">
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+            </svg>
+            {{ request.user.username }}
+          </span>
+          <span>•</span>
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+            </svg>
+            {{ request.user.email }}
+          </span>
+        </div>
+      </div>
+      <div class="hidden md:block">
+        <div class="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center border-2 border-white/30">
+          <div class="w-20 h-20 bg-gradient-to-br from-orange-400 to-maroon-700 rounded-xl flex items-center justify-center text-white text-3xl font-bold">
+            {{ request.user.username|slice:":1"|upper }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-<style>
-    .profile-page { max-width: 800px; margin: 0 auto; }
-    header p { margin: 0.25rem 0; }
-    section { border-top: 1px solid #eee; padding: 1rem 0; }
-    .field { margin-bottom: 0.75rem; }
-    .readonly { padding: 0.5rem; background:#f9f9f9; border:1px solid #eee; }
-    .actions { margin-top: 0.5rem; }
-</style>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Main Content -->
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Account Section -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+          Account Information
+        </h2>
+      </div>
+      
+      <form method="post" class="p-6">
+        {% csrf_token %}
+        
+        {% if user_form.non_field_errors %}
+          <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-800">
+            {{ user_form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <div class="space-y-6">
+          <div>
+            <label for="{{ user_form.username.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+              {{ user_form.username.label }}
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+              <input type="text" name="{{ user_form.username.html_name }}" id="{{ user_form.username.id_for_label }}" value="{{ user_form.username.value }}" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors">
+            </div>
+            {% if user_form.username.errors %}
+              <p class="mt-1 text-xs text-red-600">{{ user_form.username.errors }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label for="{{ user_form.email.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+              {{ user_form.email.label }}
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <input type="email" name="{{ user_form.email.html_name }}" id="{{ user_form.email.id_for_label }}" value="{{ user_form.email.value }}" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors">
+            </div>
+            {% if user_form.email.errors %}
+              <p class="mt-1 text-xs text-red-600">{{ user_form.email.errors }}</p>
+            {% endif %}
+          </div>
+
+          <button type="submit" name="save_account" class="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>Save Account</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Profile Section -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-maroon-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Profile Information
+        </h2>
+      </div>
+      
+      <form method="post" class="p-6">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+          <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-800">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <div class="space-y-6">
+          <div>
+            <label for="{{ form.full_name.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+              {{ form.full_name.label }}
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <input type="text" name="{{ form.full_name.html_name }}" id="{{ form.full_name.id_for_label }}" value="{{ form.full_name.value|default:'' }}" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors">
+            </div>
+            {% if form.full_name.errors %}
+              <p class="mt-1 text-xs text-red-600">{{ form.full_name.errors }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              {% if request.user.is_staff %}{{ form.type.label }}{% else %}Type{% endif %}
+            </label>
+            {% if request.user.is_staff %}
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                  </svg>
+                </div>
+                <select name="type" id="id_type" {% if form.type.field.disabled %}disabled{% endif %} class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors {% if form.type.field.disabled %}bg-gray-100 cursor-not-allowed{% endif %}">
+                  {% for code,label in acc_types %}
+                    <option value="{{ code }}" {% if profile.type == code %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                {% if form.type.field.disabled %}
+                  <input type="hidden" name="type" value="{{ profile.type }}">
+                {% endif %}
+              </div>
+              {% if form.type.errors %}
+                <p class="mt-1 text-xs text-red-600">{{ form.type.errors }}</p>
+              {% endif %}
+            {% else %}
+              <div class="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
+                {{ profile.get_type_display|default:"Not set" }}
+              </div>
+            {% endif %}
+          </div>
+
+          <button type="submit" name="save_profile" class="w-full px-6 py-3 bg-gradient-to-r from-maroon-700 to-maroon-800 hover:from-maroon-800 hover:to-maroon-900 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>Save Profile</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="lg:col-span-1 space-y-6">
+    <!-- Quick Links -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Quick Actions
+        </h2>
+      </div>
+      
+      <div class="p-4 space-y-2">
+        <a href="{% url 'home' %}" class="block p-3 bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 rounded-lg border border-orange-200 transition-all duration-200 group">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+              </svg>
+              <span class="font-medium text-gray-900">Go to Dashboard</span>
+            </div>
+            <svg class="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Security -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-maroon-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+          Security
+        </h2>
+      </div>
+      
+      <div class="p-4">
+        <a href="{% url 'password_change' %}" class="block p-4 bg-white hover:bg-orange-50 border-2 border-orange-200 hover:border-orange-300 rounded-lg transition-all duration-200 group">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+              </div>
+              <span class="font-medium text-gray-900">Change Password</span>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Logout -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="p-4">
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            <span>Logout</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
