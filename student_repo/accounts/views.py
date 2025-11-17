@@ -149,8 +149,20 @@ from django.shortcuts import render
 def student_dashboard(request):
     """Simple student dashboard. Only accessible to users with Profile.type == 'S'."""
     profile = getattr(request.user, 'profile', None)
+    # compute simple project counts for the student overview
+    try:
+        user_projects_qs = Project.objects.filter(owner=request.user, is_deleted=False)
+        total_submissions = user_projects_qs.count()
+        # determine pending by evaluating the Project.status property
+        pending_submissions = sum(1 for p in user_projects_qs if getattr(p, 'status', 'Pending') == 'Pending')
+    except Exception:
+        total_submissions = 0
+        pending_submissions = 0
+
     context = {
         'profile': profile,
+        'total_submissions': total_submissions,
+        'pending_submissions': pending_submissions,
         'usecases': [
             'Accounts & profiles',
             'Project submission (student-facing)',
@@ -183,6 +195,8 @@ def faculty_dashboard(request):
                 'title': v.title_snapshot or v.project.title,
                 'owner': getattr(v.project.owner, 'username', '') if hasattr(v.project, 'owner') else v.project.owner,
                 'time': getattr(v, 'created_at', None),
+                # filename shown to faculty so they know what they'll download
+                'filename': (v.uploaded_file.name.split('/')[-1] if getattr(v, 'uploaded_file', None) and getattr(v.uploaded_file, 'name', None) else ''),
             })
     except Exception:
         recent_submissions = []

@@ -156,7 +156,7 @@
             </div>
           </div>
           <p class="text-xs font-medium text-gray-600">Total Submissions</p>
-          <p class="text-2xl font-bold text-gray-900">--</p>
+          <p class="text-2xl font-bold text-gray-900">{{ total_submissions|default:0 }}</p>
         </div>
 
         <!-- Pending Review -->
@@ -169,10 +169,10 @@
             </div>
           </div>
           <p class="text-xs font-medium text-gray-600">Pending Review</p>
-          <p class="text-2xl font-bold text-gray-900">--</p>
+          <p class="text-2xl font-bold text-gray-900">{{ pending_submissions|default:0 }}</p>
         </div>
       </div>
-
+      {% if total_submissions == 0 %}
       <!-- Empty State -->
       <div class="text-center py-6 border-t border-gray-200">
         <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,6 +186,11 @@
           Submit Your First Project
         </a>
       </div>
+      {% else %}
+      <div class="text-sm text-gray-600 border-t border-gray-200 pt-4">
+        <p>View all your submissions with the button above.</p>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

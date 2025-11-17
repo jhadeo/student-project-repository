@@ -153,7 +153,15 @@
             <p class="text-xs text-gray-500 mt-1">Submitted by {{ s.owner }} · {{ s.time|date:"M d, Y H:i" }}</p>
           </div>
           <div class="flex items-center space-x-2">
-            <a href="{% url 'projects:download_version' s.project_pk s.version_pk %}" class="text-sm text-orange-600 hover:text-orange-700">Download</a>
+              <div class="text-right text-xs text-gray-500 mr-4">
+                {% if s.filename %}
+                  <div>{{ s.filename }}</div>
+                  <div class="text-xs text-gray-400">v{{ s.version_number }}</div>
+                {% else %}
+                  <div>v{{ s.version_number }}</div>
+                {% endif %}
+              </div>
+              <a href="{% url 'projects:download_version' s.project_pk s.version_pk %}" class="text-sm text-orange-600 hover:text-orange-700">Download</a>
           </div>
         </li>
         {% endfor %}

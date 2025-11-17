@@ -12,35 +12,57 @@ Features
 
 Quick start (Windows cmd)
 
-1. Activate the virtual environment:
+1. Create and activate a virtual environment (if you don't already have one):
 
 ```
-.\myenv\Scripts\activate.bat
+python -m venv myenv
+myenv\Scripts\activate.bat
 ```
 
-2. Install dependencies:
+Optional: upgrade pip and install dependencies:
 
 ```
-pip install -r requirements.txt
+python -m pip install --upgrade pip
 ```
 
-3. Run migrations and create a superuser:
+2. Run migrations and create a superuser:
 
 ```
 python .\student_repo\manage.py migrate
 python .\student_repo\manage.py createsuperuser
 ```
 
-4. Run the development server:
+3. Run the development server:
 
 ```
 python .\student_repo\manage.py runserver
 ```
 
-5. Run tests:
+4. Run tests:
 
 ```
 python .\student_repo\manage.py test
 ```
 
 That's it — open http://127.0.0.1:8000/ and log in.
+
+Requirements
+- A minimal `requirements.txt` is included containing only the essential pinned packages (e.g. `django-widget-tweaks==1.5.0`).
+- To install dependencies in any environment run:
+
+```
+python -m pip install -r requirements.txt
+```
+
+Don't overwrite `requirements.txt` with a full `pip freeze` unless you intend to capture every package in your current environment. Prefer adding new top-level packages by:
+
+1. Installing locally:
+```
+python -m pip install <package>
+```
+2. Pinning the package in `requirements.txt` manually (e.g. `package==1.2.3`) or by copying the single line from a temporary freeze:
+```
+python -m pip freeze > /tmp/reqs.txt
+# copy the single package line you need into requirements.txt
+```
+This keeps `requirements.txt` minimal and easier to maintain for collaborators and CI.
