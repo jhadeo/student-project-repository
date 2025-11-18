@@ -1,87 +1,347 @@
 {% extends 'base.html' %}
+
 {% block title %}{{ project.title }}{% endblock %}
+
 {% block content %}
-<h1>{{ project.title }}</h1>
-<p>{{ project.description }}</p>
-<p>Created: {{ project.created_at|date:'Y-m-d H:i' }}</p>
-<p><strong>Status:</strong> {{ project.status }}</p>
-
-<h2>Versions</h2>
-{% if versions %}
-  <ul>
-  {% for v in versions %}
-    <li>
-      v{{ v.version_number }} - {{ v.created_at|date:'Y-m-d H:i' }}
-  {% if v.uploaded_file %}- <a href="{% url 'projects:download_version' project.pk v.pk %}">download</a>{% endif %}
-      {% if v.title_snapshot %}
-        <div><strong>Title snapshot:</strong> {{ v.title_snapshot }}</div>
-      {% endif %}
-      {% if v.description_snapshot %}
-        <div><strong>Description snapshot:</strong> {{ v.description_snapshot }}</div>
-      {% endif %}
-    </li>
-  {% endfor %}
-  </ul>
-{% else %}
-  <p>No versions yet.</p>
-{% endif %}
-
-<h2>Reviews</h2>
-{% if reviews_with_versions %}
-  <ul>
-  {% for pair in reviews_with_versions %}
-    {% with r=pair.0 v=pair.1 %}
-    <li>
-      <strong>{{ r.get_decision_display }}</strong>{% if v %} (v{{ v.version_number }}){% endif %} by {{ r.reviewer.username }} on {{ r.created_at|date:'Y-m-d H:i' }}
-      {% if r.feedback %}
-        <div>{{ r.feedback }}</div>
-      {% endif %}
-    </li>
-    {% endwith %}
-  {% endfor %}
-  </ul>
-{% else %}
-  <p>No reviews yet.</p>
-{% endif %}
-
-{% if request.user.is_staff or is_faculty %}
-  <h3>Submit a review</h3>
-  <form method="post" action="{% url 'projects:review_project' project.pk %}">{% csrf_token %}
-    {{ file_form.non_field_errors }}
-    <div class="field">
-      <label for="id_decision">Decision</label><br>
-      <select name="decision" id="id_decision">
-        <option value="A">Approved</option>
-        <option value="R">Rejected</option>
-        <option value="P">Pending</option>
-      </select>
+<!-- Page Header -->
+<div class="mb-8">
+  <div class="bg-gradient-to-r from-orange-600 via-orange-500 to-maroon-800 rounded-2xl shadow-xl p-8 text-white">
+    <div class="flex items-center justify-between">
+      <div class="flex-1">
+        <h1 class="text-4xl font-bold mb-2">{{ project.title }}</h1>
+        <div class="flex items-center mt-3 space-x-4">
+          <div class="flex items-center text-orange-100">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            {{ project.created_at|date:"F d, Y" }}
+          </div>
+          {% if project.status == 'Pending' %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+              </svg>
+              {{ project.status }}
+            </span>
+          {% elif project.status == 'Approved' %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              {{ project.status }}
+            </span>
+          {% elif project.status == 'Rejected' %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              </svg>
+              {{ project.status }}
+            </span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="hidden md:block">
+        <div class="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center border-2 border-white/30">
+          <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+      </div>
     </div>
-    <div class="field">
-      <label for="id_feedback">Feedback</label><br>
-      <textarea name="feedback" id="id_feedback" rows="4"></textarea>
+  </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Left Column: Project Details & Versions -->
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Project Description -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+          </svg>
+          Project Description
+        </h2>
+      </div>
+      <div class="p-6">
+        <p class="text-gray-700 leading-relaxed">{{ project.description }}</p>
+      </div>
     </div>
-    <button type="submit">Submit review</button>
-  </form>
-{% endif %}
 
-{% if can_upload %}
-  {% if project.status != 'Approved' or request.user.is_staff %}
-    <h3>Upload new version</h3>
-    <form method="post" enctype="multipart/form-data" action="{% url 'projects:upload_version' project.pk %}">{% csrf_token %}
-      {{ file_form.as_p }}
-      <p class="hint">Only a single file is accepted (any type). Max size: 10MB by default.</p>
-      <button type="submit">Upload</button>
-    </form>
-  {% else %}
-    <p><em>Uploading new versions is disabled because this project has been approved. Contact faculty if you need to resubmit.</em></p>
-  {% endif %}
-{% else %}
-  <p><em>Uploading new versions is restricted to the project owner and site staff.</em></p>
-{% endif %}
+    <!-- Versions Section -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+          </svg>
+          Version History
+        </h2>
+        <p class="text-sm text-gray-600 mt-1">All submitted versions of this project</p>
+      </div>
+      
+      <div class="p-6">
+        {% if versions %}
+          <div class="space-y-3">
+            {% for v in versions %}
+              <div class="p-4 bg-gradient-to-r from-gray-50 to-orange-50 rounded-lg border border-gray-200 hover:border-orange-300 transition-colors">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-3">
+                      <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-orange-600 text-white">
+                        v{{ v.version_number }}
+                      </span>
+                      <span class="text-sm text-gray-600 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {{ v.created_at|date:"F d, Y H:i" }}
+                      </span>
+                    </div>
+                    
+                    {% if v.title_snapshot %}
+                      <div class="mt-2">
+                        <span class="text-xs font-semibold text-gray-700">Title:</span>
+                        <span class="text-sm text-gray-600">{{ v.title_snapshot }}</span>
+                      </div>
+                    {% endif %}
+                    
+                    {% if v.description_snapshot %}
+                      <div class="mt-1">
+                        <span class="text-xs font-semibold text-gray-700">Description:</span>
+                        <span class="text-sm text-gray-600">{{ v.description_snapshot|truncatewords:15 }}</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                  
+                  {% if v.uploaded_file %}
+                    <a href="{% url 'projects:download_version' project.pk v.pk %}" 
+                       class="ml-4 inline-flex items-center px-4 py-2 bg-gradient-to-r from-maroon-700 to-maroon-800 hover:from-maroon-800 hover:to-maroon-900 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                      </svg>
+                      Download
+                    </a>
+                  {% else %}
+                    <span class="ml-4 inline-flex items-center px-4 py-2 bg-gray-100 text-gray-500 text-sm rounded-lg">
+                      No file
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-8">
+            <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <p class="text-gray-500">No versions uploaded yet</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
 
-{% if is_faculty and not request.user.is_staff %}
-  <p><a href="{% url 'projects:submitted_projects' %}">Back to submitted projects</a></p>
-{% else %}
-  <p><a href="{% url 'projects:my_projects' %}">Back to my projects</a></p>
-{% endif %}
+    <!-- Reviews Section -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+          </svg>
+          Faculty Reviews
+        </h2>
+        <p class="text-sm text-gray-600 mt-1">Feedback from reviewers</p>
+      </div>
+      
+      <div class="p-6">
+        {% if reviews_with_versions %}
+          <div class="max-h-96 overflow-y-auto pr-2 space-y-4">
+            {% for pair in reviews_with_versions %}
+              {% with r=pair.0 v=pair.1 %}
+                <div class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                  <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                      <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-sm font-semibold text-gray-900">{{ r.reviewer.username }}</p>
+                        <p class="text-xs text-gray-600">{{ r.created_at|date:"F d, Y H:i" }}</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      {% if v %}
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-orange-100 text-orange-800">
+                          v{{ v.version_number }}
+                        </span>
+                      {% endif %}
+                      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold 
+                        {% if r.decision == 'A' %}bg-green-100 text-green-800
+                        {% elif r.decision == 'R' %}bg-red-100 text-red-800
+                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                        {{ r.get_decision_display }}
+                      </span>
+                    </div>
+                  </div>
+                  {% if r.feedback %}
+                    <div class="mt-3 p-3 bg-white rounded border border-blue-100">
+                      <p class="text-sm text-gray-700">{{ r.feedback }}</p>
+                    </div>
+                  {% endif %}
+                </div>
+              {% endwith %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-8">
+            <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p class="text-gray-500">No reviews yet</p>
+            <p class="text-sm text-gray-400 mt-1">Faculty feedback will appear here</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Actions -->
+  <div class="space-y-6">
+    <!-- Faculty Review Form -->
+    {% if request.user.is_staff or is_faculty %}
+      <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+          <h3 class="text-lg font-bold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Submit Review
+          </h3>
+        </div>
+        
+        <form method="post" action="{% url 'projects:review_project' project.pk %}" class="p-6 space-y-4">
+          {% csrf_token %}
+          {{ file_form.non_field_errors }}
+          
+          <div>
+            <label for="id_decision" class="block text-sm font-semibold text-gray-700 mb-2">Decision</label>
+            <select name="decision" id="id_decision" 
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors">
+              <option value="A">✓ Approved</option>
+              <option value="R">✗ Rejected</option>
+              <option value="P" selected>⧗ Pending</option>
+            </select>
+          </div>
+          
+          <div>
+            <label for="id_feedback" class="block text-sm font-semibold text-gray-700 mb-2">Feedback</label>
+            <textarea name="feedback" id="id_feedback" rows="6" 
+                      class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors resize-y"
+                      placeholder="Provide constructive feedback..."></textarea>
+          </div>
+          
+          <button type="submit" 
+                  class="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg shadow-md hover:shadow-xl transition-all duration-200 flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Submit Review
+          </button>
+        </form>
+      </div>
+    {% endif %}
+
+    <!-- Upload New Version -->
+    {% if can_upload %}
+      {% if project.status != 'Approved' or request.user.is_staff %}
+        <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+          <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+              Upload New Version
+            </h3>
+          </div>
+          
+          <form method="post" enctype="multipart/form-data" action="{% url 'projects:upload_version' project.pk %}" class="p-6 space-y-4">
+            {% csrf_token %}
+            {{ file_form.as_p }}
+            
+            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p class="text-xs text-blue-700">
+                <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                Single file only • Max 10MB
+              </p>
+            </div>
+            
+            <button type="submit" 
+                    class="w-full px-6 py-3 bg-gradient-to-r from-maroon-700 to-maroon-800 hover:from-maroon-800 hover:to-maroon-900 text-white font-semibold rounded-lg shadow-md hover:shadow-xl transition-all duration-200 flex items-center justify-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+              Upload Version
+            </button>
+          </form>
+        </div>
+      {% else %}
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <div class="flex items-start space-x-3">
+            <svg class="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+              <p class="text-sm font-semibold text-yellow-900">Upload Disabled</p>
+              <p class="text-xs text-yellow-700 mt-1">This project has been approved. Contact faculty to resubmit.</p>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <!-- Navigation -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="p-6 space-y-3">
+        {% if is_faculty and not request.user.is_staff %}
+          <a href="{% url 'projects:submitted_projects' %}" 
+             class="block px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium rounded-lg transition-all duration-200 text-center">
+            ← Back to Submitted Projects
+          </a>
+        {% else %}
+          <a href="{% url 'projects:my_projects' %}" 
+             class="block px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium rounded-lg transition-all duration-200 text-center">
+            ← Back to My Projects
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Custom form styling */
+  form p label {
+    @apply block text-sm font-semibold text-gray-700 mb-2;
+  }
+  
+  form p input[type="file"] {
+    @apply w-full px-4 py-3 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors duration-200 cursor-pointer text-sm;
+  }
+  
+  form p .helptext {
+    @apply block text-xs text-gray-500 mt-1 italic;
+  }
+  
+  form p {
+    @apply mb-0;
+  }
+</style>
+
 {% endblock %}
