@@ -1,17 +1,186 @@
 {% extends 'base.html' %}
+
 {% block title %}Create Project{% endblock %}
+
 {% block content %}
-<h1>Create Project</h1>
-<form method="post" enctype="multipart/form-data">{% csrf_token %}
-  <fieldset>
-    <legend>Project info</legend>
-    {{ form.as_p }}
-  </fieldset>
-  <fieldset>
-    <legend>Initial upload (optional)</legend>
-    {{ file_form.as_p }}
-  <p class="hint">Only a single file is accepted (any type). Max size: 10MB by default.</p>
-  </fieldset>
-  <button type="submit">Create</button>
-</form>
+<!-- Page Header -->
+<div class="mb-8">
+  <div class="bg-gradient-to-r from-orange-600 via-orange-500 to-maroon-800 rounded-2xl shadow-xl p-8 text-white">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-4xl font-bold mb-2">Create New Project</h1>
+        <p class="text-orange-100 text-lg">Submit your project for review</p>
+        <p class="text-orange-200 text-sm mt-2">
+          <span class="inline-flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            Fill out all required fields accurately
+          </span>
+        </p>
+      </div>
+      <div class="hidden md:block">
+        <div class="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center border-2 border-white/30">
+          <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Form Container -->
+<div class="max-w-4xl mx-auto">
+  <form method="post" enctype="multipart/form-data" class="space-y-6">
+    {% csrf_token %}
+    
+    <!-- Project Information Section -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Project Information
+        </h2>
+        <p class="text-sm text-gray-600 mt-1">Enter the details of your project</p>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        {{ form.as_p }}
+      </div>
+    </div>
+
+    <!-- File Upload Section -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-orange-200">
+        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+          File Upload
+          <span class="ml-2 text-xs font-normal text-gray-500">(Optional)</span>
+        </h2>
+        <p class="text-sm text-gray-600 mt-1">Upload your project files</p>
+      </div>
+      
+      <div class="p-6">
+        {{ file_form.as_p }}
+        
+        <!-- Upload Guidelines -->
+        <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+          <div class="flex items-start space-x-3">
+            <div class="flex-shrink-0">
+              <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-xs font-semibold text-blue-900">Upload Guidelines</h3>
+              <ul class="text-xs text-blue-700 mt-1 space-y-1">
+                <li>• Only a single file is accepted (any file type)</li>
+                <li>• Maximum file size: 10MB</li>
+                <li>• You can upload additional files after creating the project</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="bg-white rounded-xl shadow-lg border border-orange-100 p-6">
+      <div class="flex items-center justify-between">
+        <a href="{% url 'projects:my_projects' %}" 
+           class="inline-flex items-center px-6 py-3 bg-white hover:bg-gray-50 border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-medium rounded-lg transition-all duration-200">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Cancel
+        </a>
+        
+        <button type="submit" 
+                class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg shadow-md hover:shadow-xl transition-all duration-200">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Create Project
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Additional Help Section -->
+  <div class="mt-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200 p-6">
+    <h3 class="text-lg font-bold text-gray-900 flex items-center mb-3">
+      <svg class="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      Need Help?
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
+      <div class="flex items-start space-x-2">
+        <svg class="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <span>Fill all required fields marked with asterisk (*)</span>
+      </div>
+      <div class="flex items-start space-x-2">
+        <svg class="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <span>Provide clear and descriptive project information</span>
+      </div>
+      <div class="flex items-start space-x-2">
+        <svg class="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <span>You can edit project details after creation</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Custom form styling to match the design system */
+  form p label {
+    @apply block text-sm font-semibold text-gray-700 mb-2;
+  }
+  
+  form p input[type="text"],
+  form p input[type="email"],
+  form p input[type="url"],
+  form p input[type="number"],
+  form p input[type="date"],
+  form p textarea,
+  form p select {
+    @apply w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200;
+  }
+  
+  form p input[type="file"] {
+    @apply w-full px-4 py-3 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors duration-200 cursor-pointer;
+  }
+  
+  form p textarea {
+    @apply min-h-[120px] resize-y;
+  }
+  
+  form p .helptext {
+    @apply block text-xs text-gray-500 mt-1 italic;
+  }
+  
+  form p {
+    @apply mb-4;
+  }
+  
+  form ul.errorlist {
+    @apply list-none p-0 mb-2;
+  }
+  
+  form ul.errorlist li {
+    @apply text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-1;
+  }
+</style>
+
 {% endblock %}
