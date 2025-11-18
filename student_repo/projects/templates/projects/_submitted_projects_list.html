@@ -1,20 +1,102 @@
 {% comment %}Partial: renders only the table body rows for submitted projects{% endcomment %}
 {% for p in projects %}
-<tr>
-  <td><a href="{% url 'projects:project_detail' p.pk %}">{{ p.title }}</a></td>
-  <td>{{ p.owner.username }}</td>
-  <td>{{ p.status }}</td>
-  <td>{{ p.created_at }}</td>
-  <td>
-    <a href="{% url 'projects:project_detail' p.pk %}">View</a>
-    {% if request.user.is_staff or p.owner == request.user %}
-     | <a href="{% url 'projects:delete_project' p.pk %}">Delete</a>
+<tr class="hover:bg-orange-50 transition-colors duration-150">
+  <td class="px-6 py-4 whitespace-nowrap">
+    <a href="{% url 'projects:project_detail' p.pk %}" class="text-sm font-medium text-gray-900 hover:text-orange-600 transition-colors duration-150">
+      {{ p.title }}
+    </a>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <div class="flex items-center">
+      <div class="flex-shrink-0 h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
+        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+      </div>
+      <div class="ml-3">
+        <span class="text-sm font-medium text-gray-700">{{ p.owner.username }}</span>
+      </div>
+    </div>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    {% if p.status == 'Pending' %}
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+        </svg>
+        {{ p.status }}
+      </span>
+    {% elif p.status == 'Approved' %}
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        {{ p.status }}
+      </span>
+    {% elif p.status == 'Rejected' %}
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+        </svg>
+        {{ p.status }}
+      </span>
+    {% else %}
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+        {{ p.status }}
+      </span>
     {% endif %}
-    {% if request.user.is_staff %}
-     | <a href="{% url 'projects:admin_override_status' p.pk %}">Admin override</a>
-    {% endif %}
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+    <div class="flex items-center">
+      <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+      {{ p.created_at|date:"M d, Y" }}
+    </div>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-sm">
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'projects:project_detail' p.pk %}" 
+         class="inline-flex items-center text-orange-600 hover:text-orange-700 font-medium transition-colors duration-150">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+        View
+      </a>
+      
+      {% if request.user.is_staff or p.owner == request.user %}
+      <a href="{% url 'projects:delete_project' p.pk %}" 
+         class="inline-flex items-center text-red-600 hover:text-red-700 font-medium transition-colors duration-150">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Delete
+      </a>
+      {% endif %}
+      
+      {% if request.user.is_staff %}
+      <a href="{% url 'projects:admin_override_status' p.pk %}" 
+         class="inline-flex items-center text-maroon-700 hover:text-maroon-800 font-medium transition-colors duration-150">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+        </svg>
+        Override
+      </a>
+      {% endif %}
+    </div>
   </td>
 </tr>
 {% empty %}
-<tr><td colspan="5">No projects match the current filters.</td></tr>
+<tr>
+  <td colspan="5" class="px-6 py-12 text-center">
+    <div class="flex flex-col items-center">
+      <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <p class="text-gray-500 text-base font-medium">No projects match the current filters</p>
+      <p class="text-gray-400 text-sm mt-1">Try adjusting your search criteria</p>
+    </div>
+  </td>
+</tr>
 {% endfor %}
