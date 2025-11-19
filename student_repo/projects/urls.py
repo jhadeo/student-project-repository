@@ -14,4 +14,5 @@ urlpatterns = [
     path('<int:pk>/admin_override/', views.admin_override_status, name='admin_override_status'),
     path('search/', views.search_projects, name='search_projects'),
     path('<int:pk>/download/<int:version_pk>/', views.download_version, name='download_version'),
+    path('project/<int:pk>/delete/', views.delete_project, name='delete_project'),
 ]

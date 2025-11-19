@@ -11,7 +11,8 @@ import mimetypes
 from django.utils import timezone
 from django.db.models import Q
 from django.shortcuts import render
-
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
 
 @login_required
 def my_projects(request):
@@ -293,3 +294,14 @@ def delete_project(request, pk):
         messages.success(request, 'Project deleted (soft delete).')
         return redirect('projects:my_projects')
     return render(request, 'projects/confirm_delete.html', {'project': proj})
+
+@login_required
+def delete_project(request, pk):
+    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    if project.status.lower() not in ['pending', 'rejected']:
+        messages.error(request, "Cannot delete a project in this state.")
+        return redirect('projects:my_projects')
+    if request.method == 'POST':
+        project.delete()
+        return redirect('projects:my_projects')
+    return redirect('projects:my_projects')
