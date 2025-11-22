@@ -1,6 +1,6 @@
 ﻿# student-project-repository
 
-Minimal Django student project submission & review app.
+Django student project submission & review app.
 
 Features 
 - Accounts & roles: Students, Faculty, Admin with simple decorators and profile types.
@@ -8,7 +8,7 @@ Features
 - Review workflow: faculty can review, approve or reject with feedback.
 - Search & filters: dynamic search, status and date-range filters on submissions.
 - Soft delete: projects are soft-deletable for auditability.
-- Admin overrides: admins can set/override project status while keeping audit trail.
+- Admin: account management and audit log of user activity
 
 Quick start (Windows cmd)
 

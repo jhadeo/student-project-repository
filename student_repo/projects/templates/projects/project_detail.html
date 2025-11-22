@@ -326,21 +326,57 @@
 </div>
 
 <style>
-  /* Custom form styling */
+  /* Plain CSS fallback so upload form fields show borders without Tailwind processing */
   form p label {
-    @apply block text-sm font-semibold text-gray-700 mb-2;
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151; /* gray-700 */
+    margin-bottom: 0.5rem;
   }
-  
+
   form p input[type="file"] {
-    @apply w-full px-4 py-3 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors duration-200 cursor-pointer text-sm;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px dashed #FB923C; /* orange-400 */
+    border-radius: 0.5rem;
+    background: #FFF7ED; /* light orange */
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-size: 0.875rem;
   }
-  
+
+  form p input[type="text"],
+  form p input[type="email"],
+  form p textarea,
+  form p select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #D1D5DB; /* gray-300 */
+    border-radius: 0.5rem;
+    outline: none;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+
+  form p textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  form p input[type="file"]:hover {
+    background: #FFF3E0;
+  }
+
   form p .helptext {
-    @apply block text-xs text-gray-500 mt-1 italic;
+    display: block;
+    font-size: 0.75rem;
+    color: #6B7280; /* gray-500 */
+    margin-top: 0.25rem;
+    font-style: italic;
   }
-  
+
   form p {
-    @apply mb-0;
+    margin-bottom: 1rem;
   }
 </style>
 

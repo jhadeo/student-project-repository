@@ -50,7 +50,11 @@ def profile(request):
                 messages.success(request, 'Account updated successfully.')
                 return redirect('profile')
         elif 'save_profile' in request.POST:
-            profile_form = ProfileForm(request.POST, instance=profile)
+            post_data = request.POST
+            if 'type' not in post_data:
+                post_data = request.POST.copy()
+                post_data['type'] = profile.type
+            profile_form = ProfileForm(post_data, instance=profile)
             user_form = UserForm(instance=user)
             if profile_form.is_valid():
                 # save but prevent non-staff users from changing 'type'
@@ -78,7 +82,11 @@ def profile(request):
             profile_keys = {'full_name', 'type'}
             user_keys = {'username', 'email'}
             if post_keys & profile_keys:
-                profile_form = ProfileForm(request.POST, instance=profile)
+                post_data = request.POST
+                if 'type' not in post_data:
+                    post_data = request.POST.copy()
+                    post_data['type'] = profile.type
+                profile_form = ProfileForm(post_data, instance=profile)
                 user_form = UserForm(instance=user)
                 if profile_form.is_valid():
                     # preserve existing type for non-staff or sole-admin (prevent blanking)
@@ -98,7 +106,11 @@ def profile(request):
             else:
                 # try both as a last resort
                 user_form = UserForm(request.POST, instance=user)
-                profile_form = ProfileForm(request.POST, instance=profile)
+                post_data = request.POST
+                if 'type' not in post_data:
+                    post_data = request.POST.copy()
+                    post_data['type'] = profile.type
+                profile_form = ProfileForm(post_data, instance=profile)
             if user_form.is_valid() and profile_form.is_valid():
                 user_form.save()
                 # preserve existing type for non-staff or sole-admin to avoid accidentally removing admin

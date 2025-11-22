@@ -96,6 +96,17 @@ class AccountsTests(TestCase):
         u.refresh_from_db()
         self.assertEqual(u.profile.full_name, 'New Name')
 
+    def test_profile_post_without_type_preserves_existing(self):
+        """Posting to profile with no 'type' key should not clear the profile.type."""
+        u = User.objects.create_user('u4', email='u4@example.com', password='pw')
+        Profile.objects.create(user=u, type='F')
+        self.client.login(username='u4', password='pw')
+        # Post only full_name, omit 'type'
+        resp = self.client.post(reverse('profile'), {'full_name': 'Faculty Name'})
+        self.assertRedirects(resp, reverse('profile'))
+        u.refresh_from_db()
+        self.assertEqual(u.profile.type, 'F')
+
     def test_password_change(self):
         u = User.objects.create_user('u3', email='u3@example.com', password='oldpass')
         self.client.login(username='u3', password='oldpass')
